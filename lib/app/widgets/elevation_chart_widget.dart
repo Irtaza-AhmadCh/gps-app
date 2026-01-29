@@ -52,13 +52,13 @@ class ElevationChartWidget extends StatelessWidget {
           horizontalInterval: elevationRange / 4,
           getDrawingHorizontalLine: (value) {
             return FlLine(
-              color: AppColors.divider.withOpacity(0.3),
+              color: AppColors.dimGrey.withOpacity(0.3),
               strokeWidth: 1,
             );
           },
           getDrawingVerticalLine: (value) {
             return FlLine(
-              color: AppColors.divider.withOpacity(0.3),
+              color: AppColors.dimGrey.withOpacity(0.3),
               strokeWidth: 1,
             );
           },
@@ -108,7 +108,7 @@ class ElevationChartWidget extends StatelessWidget {
         ),
         borderData: FlBorderData(
           show: true,
-          border: Border.all(color: AppColors.divider),
+          border: Border.all(color: AppColors.dimGrey),
         ),
         minX: 0,
         maxX: distances.last / 1000,
@@ -171,7 +171,7 @@ class ElevationChartWidget extends StatelessWidget {
                 verticalLines: [
                   VerticalLine(
                     x: distances[currentIndex!] / 1000,
-                    color: AppColors.accent,
+                    color: AppColors.elevationGain,
                     strokeWidth: 2,
                     dashArray: [5, 5],
                   ),

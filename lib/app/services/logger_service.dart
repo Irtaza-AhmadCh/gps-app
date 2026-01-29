@@ -65,17 +65,24 @@ class LoggerService {
   }
 
   /// Logs an info message (only in debug mode).
+  static void logInfo(dynamic message, {Object? error, StackTrace? stackTrace}) {
+    if (kDebugMode) _logger.i(message, error: error, stackTrace: stackTrace);
+  }
+ /// Logs an info message (only in debug mode).
   static void i(dynamic message, {Object? error, StackTrace? stackTrace}) {
     if (kDebugMode) _logger.i(message, error: error, stackTrace: stackTrace);
   }
-
   /// Logs a warning message (only in debug mode).
   static void w(dynamic message, {Object? error, StackTrace? stackTrace}) {
     if (kDebugMode) _logger.w(message, error: error, stackTrace: stackTrace);
   }
 
   /// Logs an error message (only in debug mode).
-  static void e(dynamic message, {Object? error, StackTrace? stackTrace}) {
+  static void logError(dynamic message, {Object? error, StackTrace? stackTrace}) {
+    if (kDebugMode) _logger.e(message, error: error, stackTrace: stackTrace);
+  }
+
+   static void e(dynamic message, {Object? error, StackTrace? stackTrace}) {
     if (kDebugMode) _logger.e(message, error: error, stackTrace: stackTrace);
   }
 
@@ -83,6 +90,9 @@ class LoggerService {
   static void v(dynamic message, {Object? error, StackTrace? stackTrace}) {
     if (kDebugMode) _logger.v(message, error: error, stackTrace: stackTrace);
   }
+  
+  
+
 
   /// Logs a WTF message (only in debug mode).
   static void wtf(dynamic message, {Object? error, StackTrace? stackTrace}) {

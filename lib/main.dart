@@ -46,18 +46,17 @@ class HikingTrackerApp extends StatelessWidget {
         primaryColor: AppColors.primary,
         colorScheme: ColorScheme.dark(
           primary: AppColors.primary,
-          secondary: AppColors.accent,
-          surface: AppColors.cardBackground,
+          surface: AppColors.dimGrey,
           error: AppColors.error,
         ),
         appBarTheme: AppBarTheme(
-          backgroundColor: AppColors.cardBackground,
+          backgroundColor: AppColors.background,
           elevation: 0,
         ),
       ),
 
       // GetX routing
-      initialRoute: AppRoutes.home,
+      initialRoute: AppRoutes.splash,
       getPages: AppPages.pages,
     );
   }

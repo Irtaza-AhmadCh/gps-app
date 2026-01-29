@@ -28,7 +28,7 @@ class TimelineSliderWidget extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
+        color: AppColors.dimGrey,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(

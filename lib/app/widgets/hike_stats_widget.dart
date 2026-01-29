@@ -29,7 +29,7 @@ class HikeStatsWidget extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
+        color: AppColors.glassBackground,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -62,7 +62,7 @@ class HikeStatsWidget extends StatelessWidget {
               maxElevation != null ||
               minElevation != null) ...[
             const SizedBox(height: 16),
-            const Divider(color: AppColors.divider),
+            const Divider(color: AppColors.dimGrey),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,

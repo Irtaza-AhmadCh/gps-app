@@ -69,7 +69,7 @@ class HomeView extends GetView<HomeController> {
         margin: const EdgeInsets.all(24),
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: AppColors.cardBackground,
+          color: AppColors.glassBackground,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -170,7 +170,7 @@ class HomeView extends GetView<HomeController> {
               controller.deleteHike(hike.id);
             },
             child: Card(
-              color: AppColors.cardBackground,
+              color: AppColors.glassBackground,
               margin: const EdgeInsets.only(bottom: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
