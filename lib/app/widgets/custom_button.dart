@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../config/app_colors.dart';
 import '../config/app_text_style.dart';
+import '../config/utils.dart';
 
 class CustomButton extends StatelessWidget {
   final String text;
@@ -9,6 +10,8 @@ class CustomButton extends StatelessWidget {
   final bool isPrimary;
   final bool isLoading;
   final double? width;
+  final double? height;
+  final Widget? icon;
 
   const CustomButton({
     super.key,
@@ -16,7 +19,7 @@ class CustomButton extends StatelessWidget {
     required this.onTap,
     this.isPrimary = true,
     this.isLoading = false,
-    this.width,
+    this.width, this.icon, this.height,
   });
 
   @override
@@ -24,6 +27,7 @@ class CustomButton extends StatelessWidget {
     return GestureDetector(
       onTap: isLoading ? null : onTap,
       child: Container(
+        height: height ?? 55,
         width: width ?? double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
@@ -54,12 +58,22 @@ class CustomButton extends StatelessWidget {
                     ),
                   ),
                 )
-              : Text(
-                  text,
-                  style: AppTextStyle.button.copyWith(
-                    color: isPrimary ? AppColors.eerieBlack : AppColors.primary,
-                  ),
-                ),
+              : Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (icon != null) icon!,
+
+                  if (icon != null)
+                    12.width,
+
+                  Text(
+                      text,
+                      style: AppTextStyle.button.copyWith(
+                        color: isPrimary ? AppColors.eerieBlack : AppColors.primary,
+                      ),
+                    ),
+                ],
+              ),
         ),
       ),
     );

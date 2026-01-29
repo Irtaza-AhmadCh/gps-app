@@ -41,7 +41,8 @@ class MapTileService {
   /// Uses OpenStreetMap tiles with caching enabled
   TileLayer getTileLayer() {
     return TileLayer(
-      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+      subdomains: ['a', 'b', 'c', 'd'],
       userAgentPackageName: 'com.example.gps',
 
       // Use cached tile provider for offline support

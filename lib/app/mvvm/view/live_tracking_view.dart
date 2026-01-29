@@ -4,6 +4,7 @@ import '../../config/app_colors.dart';
 import '../../config/app_strings.dart';
 import '../../config/app_text_style.dart';
 import '../../config/utils.dart';
+import '../../widgets/custom_button.dart';
 import '../../widgets/map_widget.dart';
 import '../view_model/hike_tracking_controller.dart';
 
@@ -58,6 +59,38 @@ class LiveTrackingView extends GetView<HikeTrackingController> {
               ),
             ),
           ),
+
+          /// WAITING FOR GPS OVERLAY
+          Obx(() {
+            if (!controller.gpsReady.value && !controller.isTracking.value) {
+              return Center(
+                child: Container(// use your extension
+                  decoration: BoxDecoration(
+                    color: AppColors.mapPlaceholder,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.gps_fixed,
+                          size: 48, color: AppColors.mapPlaceholderText),
+                      12.height,
+                      Text(
+                        "Waiting for GPS signal...",
+                        style: TextStyle(
+                          color: AppColors.mapPlaceholderText,
+                          fontSize: 14,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+            return const SizedBox.shrink();
+          }),
+
         ],
       ),
     );
@@ -65,16 +98,13 @@ class LiveTrackingView extends GetView<HikeTrackingController> {
 
   /// ▶️ Start Hike
   Widget _startHikeButton() {
-    return ElevatedButton(
-      onPressed: controller.startTracking,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primary,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: const StadiumBorder(),
-      ),
-      child: Text(
-        AppStrings.startHike,
-        style: AppTextStyle.button,
+    return Obx(
+          () => CustomButton(
+
+        text: !controller.gpsReady.value ? "Waiting" : AppStrings.startHike,
+        onTap: controller.gpsReady.value ? controller.startTracking : (){
+          Get.snackbar("Waiting for GPS", "Please wait for GPS to be ready", snackPosition: SnackPosition.TOP);
+        },
       ),
     );
   }
@@ -104,40 +134,23 @@ class LiveTrackingView extends GetView<HikeTrackingController> {
         Row(
           children: [
             Expanded(
-              child: ElevatedButton.icon(
-                onPressed: controller.isPaused.value
-                    ? controller.resumeTracking
-                    : controller.pauseTracking,
-                icon: Icon(
-                  controller.isPaused.value
-                      ? Icons.play_arrow
-                      : Icons.pause,
-                ),
-                label: Text(
-                  controller.isPaused.value
-                      ? AppStrings.resume
-                      : AppStrings.pause,
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.warning,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
+              child: CustomButton(
+                text: controller.isPaused.value ? AppStrings.resume.tr : AppStrings.pause.tr,
+                icon: Icon( controller.isPaused.value ? Icons.play_arrow : Icons.pause),
+                onTap: controller.isPaused.value ? controller.resumeTracking : controller.pauseTracking,
               ),
             ),
-            const SizedBox(width: 12),
+            12.width,
             Expanded(
-              child: ElevatedButton.icon(
-                onPressed: controller.stopTracking,
-                icon: const Icon(Icons.stop),
-                label: Text(AppStrings.stop),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.error,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
+              child: CustomButton(
+                text: AppStrings.stop.tr,
+                icon:  Icon(Icons.stop),
+                onTap: controller.stopTracking,
               ),
             ),
           ],
-        ),
+        )
+
       ],
     );
   }
