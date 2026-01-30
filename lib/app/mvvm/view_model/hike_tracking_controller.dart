@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
-import '../../config/app_strings.dart';
 import '../../services/logger_service.dart';
 import '../../repository/hike_repository.dart';
 import '../model/track_point.dart';
@@ -47,123 +46,156 @@ class HikeTrackingController extends GetxController {
     mapController.dispose();
     super.onClose();
   }
-  final RxBool gpsReady = false.obs;
-  void _onLocationUpdate(TrackPoint point) {
-    if (point.accuracy != null && point.accuracy! > _minAccuracy) return;
 
+  /// Start GPS tracking
+  Future<void> startTracking() async {
+    try {
+      LoggerService.i(
+        'HikeTrackingController.startTracking: Attempting to start tracking',
+      );
+
+      // Check permissions
+      final hasPermission = await _repository.hasLocationPermission();
+      LoggerService.i(
+        'HikeTrackingController.startTracking: Location permission current state: $hasPermission',
+      );
+
+      if (!hasPermission) {
+        final granted = await _repository.requestLocationPermission();
+        LoggerService.i(
+          'HikeTrackingController.startTracking: Location permission request result: $granted',
+        );
+        if (!granted) {
+          Get.snackbar(
+            'Permission Required',
+            'Location permission is required to track hikes',
+            snackPosition: SnackPosition.BOTTOM,
+          );
+          return;
+        }
+      }
+
+      // Check location services
+      final serviceEnabled = await _repository.isLocationServiceEnabled();
+      LoggerService.i(
+        'HikeTrackingController.startTracking: Location service enabled: $serviceEnabled',
+      );
+
+      if (!serviceEnabled) {
+        Get.snackbar(
+          'GPS Disabled',
+          'Please enable location services',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return;
+      }
+
+      // Reset state
+      LoggerService.i(
+        'HikeTrackingController.startTracking: Resetting tracking state',
+      );
+      trackPoints.clear();
+      totalDistance.value = 0.0;
+      elevationGain.value = 0.0;
+      elevationLoss.value = 0.0;
+      duration.value = Duration.zero;
+      _pausedDuration = Duration.zero;
+      _startTime = DateTime.now();
+      followUser.value = true;
+      LoggerService.i(
+        'HikeTrackingController.startTracking: Tracking started at $_startTime',
+      );
+
+      // Start tracking
+      isTracking.value = true;
+      isPaused.value = false;
+
+      // Subscribe to location stream
+      _locationSubscription = _repository.startTracking().listen(
+        _onLocationUpdate,
+        onError: (error) {
+          LoggerService.e(
+            'HikeTrackingController.startTracking: Tracking error: $error',
+          );
+          Get.snackbar(
+            'Tracking Error',
+            'GPS tracking failed: $error',
+            snackPosition: SnackPosition.BOTTOM,
+          );
+          stopTracking(saveHike: false);
+        },
+      );
+
+      // Start duration timer
+      _durationTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (!isPaused.value) {
+          duration.value =
+              DateTime.now().difference(_startTime!) - _pausedDuration;
+        }
+      });
+    } catch (e, stackTrace) {
+      LoggerService.e(
+        'HikeTrackingController.startTracking: Failed to start tracking: $e',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      Get.snackbar(
+        'Error',
+        'Failed to start tracking: $e',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  }
+
+  /// Handle location updates
+  void _onLocationUpdate(TrackPoint point) {
+    // 1. Accuracy Filtering
+    // If accuracy is too poor, ignore the point to prevent drift
+    if (point.accuracy != null && point.accuracy! > _minAccuracy) {
+      LoggerService.i(
+        'HikeTrackingController._onLocationUpdate: Filtering out low accuracy point: ${point.accuracy}m',
+      );
+      return;
+    }
+
+    // 2. Stationary Drift Filtering
+    if (trackPoints.isNotEmpty) {
+      final lastPoint = trackPoints.last;
+      final distance = _repository.calculateTotalDistance([lastPoint, point]);
+
+      // If movement is very small and accuracy is not perfect, ignore to prevent "jumping"
+      if (distance < _stationaryThreshold && (point.accuracy ?? 0) > 5.0) {
+        LoggerService.i(
+          'HikeTrackingController._onLocationUpdate: Filtering out stationary drift: ${distance.toStringAsFixed(2)}m',
+        );
+        return;
+      }
+    }
+
+    LoggerService.i(
+      'HikeTrackingController._onLocationUpdate: New location update: ${point.latitude}, ${point.longitude}, alt: ${point.altitude}, acc: ${point.accuracy}',
+    );
     currentLocation.value = point;
     trackPoints.add(point);
 
-    // Mark GPS as ready
-    if (!gpsReady.value) gpsReady.value = true;
-
-    // Auto-follow map
+    // 3. Map Auto-centering
     if (followUser.value) {
       try {
         mapController.move(
           LatLng(point.latitude, point.longitude),
           mapController.camera.zoom,
         );
-      } catch (_) {}
+      } catch (e) {
+        // Map might not be ready or app is in background, ignore UI update errors
+        LoggerService.e(
+          'HikeTrackingController._onLocationUpdate: Failed to update map camera (expected if backgrounded): $e',
+        );
+      }
     }
 
+    // Update statistics
     _updateStatistics();
   }
-
-  /// Start GPS tracking
-  Future<void> startTracking() async {
-    final serviceEnabled = await _repository.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      Get.snackbar(
-        "Gps disabled",
-        AppStrings.enableGps.tr,
-        snackPosition: SnackPosition.BOTTOM,
-      );
-      gpsReady.value = false;
-      return;
-    }
-
-    // Reset state
-    trackPoints.clear();
-    totalDistance.value = 0;
-    elevationGain.value = 0;
-    elevationLoss.value = 0;
-    duration.value = Duration.zero;
-    _pausedDuration = Duration.zero;
-    _startTime = DateTime.now();
-    followUser.value = true;
-
-    // Start tracking
-    isTracking.value = true;
-    isPaused.value = false;
-    gpsReady.value = false; // Wait until first point
-    _locationSubscription = _repository.startTracking().listen(
-      _onLocationUpdate,
-      onError: (error) {
-        Get.snackbar("Tracking error", error.toString(),
-            snackPosition: SnackPosition.BOTTOM);
-        stopTracking(saveHike: false);
-      },
-    );
-
-    // Duration timer
-    _durationTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!isPaused.value) {
-        duration.value =
-            DateTime.now().difference(_startTime!) - _pausedDuration;
-      }
-    });
-  }
-
-  /// Handle location updates
-  // void _onLocationUpdate(TrackPoint point) {
-  //   // 1. Accuracy Filtering
-  //   // If accuracy is too poor, ignore the point to prevent drift
-  //   if (point.accuracy != null && point.accuracy! > _minAccuracy) {
-  //     LoggerService.i(
-  //       'HikeTrackingController._onLocationUpdate: Filtering out low accuracy point: ${point.accuracy}m',
-  //     );
-  //     return;
-  //   }
-  //
-  //   // 2. Stationary Drift Filtering
-  //   if (trackPoints.isNotEmpty) {
-  //     final lastPoint = trackPoints.last;
-  //     final distance = _repository.calculateTotalDistance([lastPoint, point]);
-  //
-  //     // If movement is very small and accuracy is not perfect, ignore to prevent "jumping"
-  //     if (distance < _stationaryThreshold && (point.accuracy ?? 0) > 5.0) {
-  //       LoggerService.i(
-  //         'HikeTrackingController._onLocationUpdate: Filtering out stationary drift: ${distance.toStringAsFixed(2)}m',
-  //       );
-  //       return;
-  //     }
-  //   }
-  //
-  //   LoggerService.i(
-  //     'HikeTrackingController._onLocationUpdate: New location update: ${point.latitude}, ${point.longitude}, alt: ${point.altitude}, acc: ${point.accuracy}',
-  //   );
-  //   currentLocation.value = point;
-  //   trackPoints.add(point);
-  //
-  //   // 3. Map Auto-centering
-  //   if (followUser.value) {
-  //     try {
-  //       mapController.move(
-  //         LatLng(point.latitude, point.longitude),
-  //         mapController.camera.zoom,
-  //       );
-  //     } catch (e) {
-  //       // Map might not be ready or app is in background, ignore UI update errors
-  //       LoggerService.e(
-  //         'HikeTrackingController._onLocationUpdate: Failed to update map camera (expected if backgrounded): $e',
-  //       );
-  //     }
-  //   }
-  //
-  //   // Update statistics
-  //   _updateStatistics();
-  // }
 
   /// Update statistics from track points
   void _updateStatistics() {

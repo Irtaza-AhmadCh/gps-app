@@ -91,7 +91,7 @@ class HikeSummaryView extends GetView<HikeReplayController> {
                               max: maxIndex.toDouble(),
                               divisions: maxIndex > 0 ? maxIndex : 1,
                               activeColor: AppColors.primary,
-                              inactiveColor: AppColors.dimGrey,
+                              inactiveColor: AppColors.divider,
                               onChanged: (value) {
                                 controller.scrubToIndex(value.toInt());
                               },
