@@ -8,7 +8,7 @@ class AppColors {
   static const Color white = Color(0xFFFFFFFF);
   static const Color platinum = Color(0xFFDBDBDB);
   static const Color dimGrey = Color(0xFF6B6B6B);
-  static const Color eerieBlack = Color(0xFF191919);
+  static const Color eerieBlack = Color(0xFF181818);
   static const Color chartreuse = Color(0xFFD9FF42);
 
   // Semantic Colors
@@ -38,5 +38,8 @@ class AppColors {
 
   // Placeholder
   static const Color mapPlaceholder = dimGrey;
+  static const Color divider = surface;
+  static const Color cardBackground = surface;
+
   static const Color mapPlaceholderText = platinum;
 }

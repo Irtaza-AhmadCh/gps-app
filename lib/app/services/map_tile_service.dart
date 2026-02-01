@@ -1,61 +1,79 @@
+import 'package:get/get.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_tile_caching/flutter_map_tile_caching.dart' as FMTC;
+import 'package:gps/app/mvvm/model/map_skin_modal.dart';
 import 'logger_service.dart';
 
-/// Service for map tile configuration and caching
-///
-/// Uses OpenStreetMap tiles with automatic caching for offline use.
-///
-/// Offline Behavior:
-/// - Tiles are cached automatically during use
-/// - If offline and tiles are unavailable:
-///   - Show placeholder background (gray)
-///   - Overlay message: "Map not available offline. Pre-cache area before hiking."
-///   - Prevents blank/broken map UX
-/// - Pre-caching requires manual implementation (future enhancement)
 class MapTileService {
   MapTileService._();
   static final MapTileService instance = MapTileService._();
 
-  /// Store name for cached tiles
   static const String _storeName = 'hikingMapTiles';
 
-  /// Initialize tile caching
-  Future<void> init() async {
-    LoggerService.i('MapTileService.init: initializing FMTC backend');
-    await FMTC.FMTCObjectBoxBackend().initialise();
+  /// Reactive current skin
+  final RxString _currentSkinName = 'Default'.obs;
 
-    // Create store if it doesn't exist
-    final storeExists = await FMTC.FMTCStore(_storeName).manage.ready;
-    LoggerService.i(
-      'MapTileService.init: store "$_storeName" exists: $storeExists',
-    );
-    if (!storeExists) {
-      LoggerService.i('MapTileService.init: creating store "$_storeName"');
-      await FMTC.FMTCStore(_storeName).manage.create();
+  /// Map of all skins
+  final Map<String, MapSkin> _skins = {};
+  List<MapSkin> skinlist = [];
+
+  MapSkin get currentSkin {
+    if (_skins.containsKey(_currentSkinName.value)) {
+      return _skins[_currentSkinName.value]!;
+    }
+    // Fallback to first registered skin
+    if (_skins.isNotEmpty) {
+      return _skins.values.first;
+    }
+    throw Exception('No map skins registered yet!');
+  }
+
+  /// Initialize skins (call once)
+  void registerSkins(List<MapSkin> skins) {
+    skinlist = skins;
+
+    for (final skin in skins) {
+      _skins[skin.name] = skin;
+    }
+    LoggerService.i('MapTileService: registered skins ${_skins.keys}');
+  }
+
+  /// Get current skin reactively
+
+  /// Change skin at runtime
+  void changeSkin(String skinName) {
+    if (_skins.containsKey(skinName)) {
+      LoggerService.i('MapTileService: changing skin to $skinName');
+      _currentSkinName.value = skinName;
+    } else {
+      LoggerService.e('MapTileService: skin $skinName not found');
     }
   }
 
-  /// Get tile layer configuration for flutter_map
-  ///
-  /// Uses OpenStreetMap tiles with caching enabled
+  /// Observe current skin (for UI)
+  RxString get currentSkinNameRx => _currentSkinName;
+
+  /// Initialize FMTC backend
+  Future<void> init() async {
+    LoggerService.i('MapTileService.init: initializing FMTC backend');
+    await FMTC.FMTCObjectBoxBackend().initialise();
+    final storeExists = await FMTC.FMTCStore(_storeName).manage.ready;
+    if (!storeExists) await FMTC.FMTCStore(_storeName).manage.create();
+  }
+
+  /// Returns TileLayer based on current skin
   TileLayer getTileLayer() {
+    final skin = currentSkin;
     return TileLayer(
-      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      urlTemplate: skin.urlTemplate,
+      subdomains: skin.subdomains,
       userAgentPackageName: 'com.example.gps',
-
-      // Use cached tile provider for offline support
       tileProvider: FMTC.FMTCStore(_storeName).getTileProvider(),
-
-      // Tile display settings
       maxZoom: 19,
       minZoom: 1,
-
-      // Error tile builder - shows when tile fails to load
       errorTileCallback: (tile, error, stackTrace) {
-        // Log error but don't crash
         LoggerService.e(
-          'MapTileService.getTileLayer: Tile load error: $error',
+          'Tile load error: $error',
           error: error,
           stackTrace: stackTrace,
         );
@@ -63,33 +81,7 @@ class MapTileService {
     );
   }
 
-  /// Get attribution text for OpenStreetMap
-  String getAttributionText() {
-    return '© OpenStreetMap contributors';
-  }
+  String getAttributionText() => currentSkin.attribution;
 
-  /// Check if store is ready
-  Future<bool> isStoreReady() async {
-    return await FMTC.FMTCStore(_storeName).manage.ready;
-  }
-
-  /// Get cache statistics
-  Future<Map<String, dynamic>> getCacheStats() async {
-    LoggerService.i('MapTileService.getCacheStats: retrieving tile count');
-    final stats = await FMTC.FMTCStore(_storeName).stats.length;
-    LoggerService.i(
-      'MapTileService.getCacheStats: currently $stats tiles cached',
-    );
-    return {'cachedTiles': stats};
-  }
-
-  /// Clear all cached tiles (for settings/cleanup)
-  Future<void> clearCache() async {
-    LoggerService.i('MapTileService.clearCache: clearing store "$_storeName"');
-    await FMTC.FMTCStore(_storeName).manage.delete();
-    await FMTC.FMTCStore(_storeName).manage.create();
-    LoggerService.i(
-      'MapTileService.clearCache: cache cleared and store recreated',
-    );
-  }
+  // Optional: cache stats, clear cache...
 }

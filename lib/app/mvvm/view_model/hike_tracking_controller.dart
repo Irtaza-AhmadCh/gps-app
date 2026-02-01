@@ -19,9 +19,13 @@ class HikeTrackingController extends GetxController {
   final RxDouble elevationGain = 0.0.obs;
   final RxDouble elevationLoss = 0.0.obs;
   final Rx<Duration> duration = Duration.zero.obs;
-  final RxBool isTracking = false.obs;
+  final RxBool isTracking = false.obs; // Means location service is active
   final RxBool isPaused = false.obs;
   final RxBool followUser = true.obs;
+
+  // New state for manual start
+  final RxBool isGpsReady = false.obs;
+  final RxBool isHikeStarted = false.obs;
 
   final MapController mapController = MapController();
 
@@ -47,24 +51,17 @@ class HikeTrackingController extends GetxController {
     super.onClose();
   }
 
-  /// Start GPS tracking
-  Future<void> startTracking() async {
+  /// Initialize location services without starting hike recording
+  Future<void> initializeLocationService() async {
     try {
       LoggerService.i(
-        'HikeTrackingController.startTracking: Attempting to start tracking',
+        'HikeTrackingController.initializeLocationService: initializing...',
       );
 
       // Check permissions
       final hasPermission = await _repository.hasLocationPermission();
-      LoggerService.i(
-        'HikeTrackingController.startTracking: Location permission current state: $hasPermission',
-      );
-
       if (!hasPermission) {
         final granted = await _repository.requestLocationPermission();
-        LoggerService.i(
-          'HikeTrackingController.startTracking: Location permission request result: $granted',
-        );
         if (!granted) {
           Get.snackbar(
             'Permission Required',
@@ -77,10 +74,6 @@ class HikeTrackingController extends GetxController {
 
       // Check location services
       final serviceEnabled = await _repository.isLocationServiceEnabled();
-      LoggerService.i(
-        'HikeTrackingController.startTracking: Location service enabled: $serviceEnabled',
-      );
-
       if (!serviceEnabled) {
         Get.snackbar(
           'GPS Disabled',
@@ -90,33 +83,12 @@ class HikeTrackingController extends GetxController {
         return;
       }
 
-      // Reset state
-      LoggerService.i(
-        'HikeTrackingController.startTracking: Resetting tracking state',
-      );
-      trackPoints.clear();
-      totalDistance.value = 0.0;
-      elevationGain.value = 0.0;
-      elevationLoss.value = 0.0;
-      duration.value = Duration.zero;
-      _pausedDuration = Duration.zero;
-      _startTime = DateTime.now();
-      followUser.value = true;
-      LoggerService.i(
-        'HikeTrackingController.startTracking: Tracking started at $_startTime',
-      );
-
-      // Start tracking
+      // Start listening to location updates immediately for the map
       isTracking.value = true;
-      isPaused.value = false;
-
-      // Subscribe to location stream
       _locationSubscription = _repository.startTracking().listen(
         _onLocationUpdate,
         onError: (error) {
-          LoggerService.e(
-            'HikeTrackingController.startTracking: Tracking error: $error',
-          );
+          LoggerService.e('HikeTrackingController: Tracking error: $error');
           Get.snackbar(
             'Tracking Error',
             'GPS tracking failed: $error',
@@ -125,30 +97,72 @@ class HikeTrackingController extends GetxController {
           stopTracking(saveHike: false);
         },
       );
-
-      // Start duration timer
-      _durationTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-        if (!isPaused.value) {
-          duration.value =
-              DateTime.now().difference(_startTime!) - _pausedDuration;
-        }
-      });
     } catch (e, stackTrace) {
       LoggerService.e(
-        'HikeTrackingController.startTracking: Failed to start tracking: $e',
+        'HikeTrackingController.initializeLocationService: Failed to init: $e',
         error: e,
         stackTrace: stackTrace,
-      );
-      Get.snackbar(
-        'Error',
-        'Failed to start tracking: $e',
-        snackPosition: SnackPosition.BOTTOM,
       );
     }
   }
 
+  /// Manually start hike recording
+  void startHikeRecording() {
+    if (!isGpsReady.value) {
+      Get.snackbar(
+        'GPS Not Ready',
+        'Waiting for better GPS signal...',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    LoggerService.i('HikeTrackingController.startHikeRecording: Starting hike');
+
+    // Reset state
+    trackPoints.clear();
+    totalDistance.value = 0.0;
+    elevationGain.value = 0.0;
+    elevationLoss.value = 0.0;
+    duration.value = Duration.zero;
+    _pausedDuration = Duration.zero;
+    _startTime = DateTime.now();
+
+    // Set recording flags
+    isHikeStarted.value = true;
+    isPaused.value = false;
+
+    // Start duration timer
+    _durationTimer?.cancel();
+    _durationTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!isPaused.value && isHikeStarted.value) {
+        duration.value =
+            DateTime.now().difference(_startTime!) - _pausedDuration;
+      }
+    });
+  }
+
   /// Handle location updates
   void _onLocationUpdate(TrackPoint point) {
+    // Basic validity check
+    if (point.latitude == 0 && point.longitude == 0) return;
+
+    // Update current location immediately for the map UI (blue dot)
+    // This happens even before hike starts, so user can see where they are
+    currentLocation.value = point;
+    isGpsReady.value = true;
+
+    // If hike hasn't started manually, we don't record anything else
+    if (!isHikeStarted.value) {
+      // Still auto-center map if following
+      if (followUser.value) {
+        _moveMap(point);
+      }
+      return;
+    }
+
+    // --- Recording Logic Below ---
+
     // 1. Accuracy Filtering
     // If accuracy is too poor, ignore the point to prevent drift
     if (point.accuracy != null && point.accuracy! > _minAccuracy) {
@@ -165,9 +179,6 @@ class HikeTrackingController extends GetxController {
 
       // If movement is very small and accuracy is not perfect, ignore to prevent "jumping"
       if (distance < _stationaryThreshold && (point.accuracy ?? 0) > 5.0) {
-        LoggerService.i(
-          'HikeTrackingController._onLocationUpdate: Filtering out stationary drift: ${distance.toStringAsFixed(2)}m',
-        );
         return;
       }
     }
@@ -175,26 +186,26 @@ class HikeTrackingController extends GetxController {
     LoggerService.i(
       'HikeTrackingController._onLocationUpdate: New location update: ${point.latitude}, ${point.longitude}, alt: ${point.altitude}, acc: ${point.accuracy}',
     );
-    currentLocation.value = point;
     trackPoints.add(point);
 
     // 3. Map Auto-centering
     if (followUser.value) {
-      try {
-        mapController.move(
-          LatLng(point.latitude, point.longitude),
-          mapController.camera.zoom,
-        );
-      } catch (e) {
-        // Map might not be ready or app is in background, ignore UI update errors
-        LoggerService.e(
-          'HikeTrackingController._onLocationUpdate: Failed to update map camera (expected if backgrounded): $e',
-        );
-      }
+      _moveMap(point);
     }
 
     // Update statistics
     _updateStatistics();
+  }
+
+  void _moveMap(TrackPoint point) {
+    try {
+      mapController.move(
+        LatLng(point.latitude, point.longitude),
+        mapController.camera.zoom,
+      );
+    } catch (e) {
+      // Map might not be ready or app is in background, ignore UI update errors
+    }
   }
 
   /// Update statistics from track points
@@ -249,6 +260,7 @@ class HikeTrackingController extends GetxController {
     _durationTimer?.cancel();
 
     isTracking.value = false;
+    isHikeStarted.value = false;
     isPaused.value = false;
 
     if (saveHike && trackPoints.isNotEmpty) {

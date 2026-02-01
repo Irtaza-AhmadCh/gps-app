@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
+import 'package:gps/app/config/utils.dart';
+import 'package:gps/app/widgets/glass_container.dart';
 import 'package:latlong2/latlong.dart';
 import '../config/app_colors.dart';
 import '../services/map_tile_service.dart';
@@ -106,6 +109,8 @@ class MapWidget extends StatelessWidget {
           ],
         ),
 
+        const MapSkinSwitcher(),
+
         // Attribution
         Positioned(
           bottom: 8,
@@ -124,36 +129,108 @@ class MapWidget extends StatelessWidget {
         ),
 
         // Offline placeholder (shown when no points and potentially offline)
-        if (points.isEmpty)
-          Center(
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: AppColors.mapPlaceholder,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.map_outlined,
-                    size: 48,
-                    color: AppColors.mapPlaceholderText,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Waiting for GPS signal...',
-                    style: TextStyle(
-                      color: AppColors.mapPlaceholderText,
-                      fontSize: 14,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+        // if ()
+        //   Center(
+        //     child: Container(
+        //       padding: const EdgeInsets.all(24),
+        //       decoration: BoxDecoration(
+        //         color: AppColors.mapPlaceholder,
+        //         borderRadius: BorderRadius.circular(12),
+        //       ),
+        //       child: Column(
+        //         mainAxisSize: MainAxisSize.min,
+        //         children: [
+        //           Icon(
+        //             Icons.map_outlined,
+        //             size: 48,
+        //             color: AppColors.mapPlaceholderText,
+        //           ),
+        //           const SizedBox(height: 12),
+        //           Text(
+        //             '
+        //ting for GPS signal...',
+        //             style: TextStyle(
+        //               color: AppColors.mapPlaceholderText,
+        //               fontSize: 14,
+        //             ),
+        //             textAlign: TextAlign.center,
+        //           ),
+        //         ],
+        //       ),
+        //     ),
+        //   ),
+      ],
+    );
+  }
+}
+
+/// Floating widget to switch between map skins dynamically
+class MapSkinSwitcher extends StatelessWidget {
+  const MapSkinSwitcher({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // Get list of registered skins
+    final skins = MapTileService.instance.skinlist;
+
+    return Positioned(
+      top: 16,
+      right: 16,
+      child: GlassContainer(
+        padding: const EdgeInsets.all(12),
+        borderRadius: 16,
+        blur: 10,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Map Style',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.white,
+                fontWeight: FontWeight.bold,
               ),
             ),
-          ),
-      ],
+            8.height, // Using your extensions for spacing
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(skins.length, (index) {
+                final skin = skins[index];
+                return Obx(
+                  () => GestureDetector(
+                    onTap: () {
+                      MapTileService.instance.changeSkin(skin.name);
+                    },
+                    child: Container(
+                      width: 50,
+                      height: 30,
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+
+                      decoration: BoxDecoration(
+                        color:
+                            MapTileService.instance.currentSkinNameRx.value ==
+                                skin.name
+                            ? AppColors.primary.withOpacity(0.8)
+                            : AppColors.dimGrey.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Center(
+                        child: Text(
+                          skin.name,
+                          style: const TextStyle(
+                            color: AppColors.white,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

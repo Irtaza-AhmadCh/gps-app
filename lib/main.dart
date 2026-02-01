@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:gps/app/mvvm/model/map_skin_modal.dart';
 import 'app/config/app_routes.dart';
 import 'app/config/app_pages.dart';
 import 'app/config/app_colors.dart';
@@ -18,6 +19,28 @@ void main() async {
 
     // Initialize FMTC and Map Tile Service (initializes backend, creates store)
     await MapTileService.instance.init();
+
+    // Register map skins
+    final skins = [
+      MapSkin(
+        name: 'Default',
+        urlTemplate:
+            'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        attribution: '© OpenStreetMap contributors',
+      ),
+      MapSkin(
+        name: 'Light',
+        urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        attribution: '© OpenStreetMap contributors',
+      ),
+      MapSkin(
+        name: 'Satellite',
+        urlTemplate:
+            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        attribution: '© ESRI, Maxar, Earthstar Geographics',
+      ),
+    ];
+    MapTileService.instance.registerSkins(skins);
 
     LoggerService.i('main: Application initialization complete');
   } catch (e, stackTrace) {

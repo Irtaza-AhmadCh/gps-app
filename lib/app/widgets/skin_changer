@@ -1,0 +1,71 @@
+
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import '../services/map_tile_service.dart';
+import '../config/app_colors.dart';
+import 'glass_container.dart'; // Your existing glass container widget
+
+/// Floating widget to switch between map skins dynamically
+class MapSkinSwitcher extends StatelessWidget {
+  const MapSkinSwitcher({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // Get list of registered skins
+    final skins = MapTileService.instance.skinsList;
+
+    return Positioned(
+      top: 16,
+      right: 16,
+      child: GlassContainer(
+        padding: const EdgeInsets.all(12),
+        borderRadius: 16,
+        blur: 10,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Map Style',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            8.height, // Using your extensions for spacing
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(skins.length, (index) {
+                final skin = skins[index];
+                return Obx(
+                  () => GestureDetector(
+                    onTap: () {
+                      MapTileService.instance.changeSkin(skin.name);
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: MapTileService.instance.currentSkinNameRx.value == skin.name
+                            ? AppColors.primary.withOpacity(0.8)
+                            : AppColors.dimGrey.withOpacity(0.4),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        skin.name,
+                        style: const TextStyle(
+                          color: AppColors.white,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
