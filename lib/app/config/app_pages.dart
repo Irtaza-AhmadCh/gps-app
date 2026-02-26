@@ -10,7 +10,6 @@ import '../mvvm/view/signup_view.dart';
 import '../mvvm/view/permission_view.dart';
 import '../mvvm/view/dashboard_view.dart';
 import '../mvvm/view/profile_view.dart';
-import '../mvvm/view/hike_completion_view.dart';
 import '../mvvm/view/add_hike_details_view.dart';
 import '../mvvm/view/hikes_list_view.dart';
 import '../mvvm/view/hike_details_view.dart';
@@ -23,10 +22,11 @@ import '../mvvm/view_model/bindings/signup_binding.dart';
 import '../mvvm/view_model/bindings/permission_binding.dart';
 import '../mvvm/view_model/bindings/dashboard_binding.dart';
 import '../mvvm/view_model/bindings/profile_binding.dart';
-import '../mvvm/view_model/bindings/hike_completion_binding.dart';
 import '../mvvm/view_model/bindings/add_hike_details_binding.dart';
 import '../mvvm/view_model/bindings/hikes_list_binding.dart';
 import '../mvvm/view_model/bindings/hike_details_binding.dart';
+import '../mvvm/view/bottom_bar_view.dart';
+import '../mvvm/view_model/bindings/bottom_bar_binding.dart';
 import 'app_routes.dart';
 
 /// App pages configuration with GetX bindings
@@ -69,6 +69,11 @@ class AppPages {
       page: () => const ProfileView(),
       binding: ProfileBinding(),
     ),
+    GetPage(
+      name: AppRoutes.bottomBarView,
+      page: () => const BottomBarView(),
+      binding: BottomBarBinding(),
+    ),
     // Existing routes - keeping for backward compatibility or future cleanup
     GetPage(
       name: AppRoutes.home,
@@ -86,11 +91,11 @@ class AppPages {
       binding: HikeReplayBinding(),
     ),
     // New routes for redesigned UI
-    GetPage(
-      name: AppRoutes.hikeCompletion,
-      page: () => const HikeCompletionView(),
-      binding: HikeCompletionBinding(),
-    ),
+    // GetPage(
+    //   name: AppRoutes.hikeCompletion,
+    //   page: () => const HikeCompletionView(),
+    //   binding: HikeCompletionBinding(),
+    // ),
     GetPage(
       name: AppRoutes.addHikeDetails,
       page: () => const AddHikeDetailsView(),

@@ -7,6 +7,8 @@ class AppStrings {
 
   // Splash
   static String get splashTitle => 'Explore with Trust';
+  static String get readyToExplore => 'Ready to Explore';
+  static String get welcomeBack => 'Welcome back';
 
   // Onboarding
   static String get onboarding1Title => 'Track your journeys';
@@ -65,6 +67,11 @@ class AppStrings {
   static String get terms => 'Terms';
   static String get logout => 'Logout';
 
+  // Bottom Navigation
+  static String get home => 'Home';
+  static String get record => 'Record';
+  static String get profileTab => 'Profile';
+
   // Existing Strings (Kept for compatibility)
   static String get homeTitle => 'My Hikes';
   static String get noHikesYet => 'No hikes yet. Start your first adventure!';
@@ -96,7 +103,9 @@ class AppStrings {
   static String get replay => 'Replay';
   static String get elevationProfile => 'Elevation Profile';
   static String get stats => 'Stats';
+  static String get totalPlaces => 'Total Places';
   static String get totalDistance => 'Total Distance';
+  static String get totalTime => 'Total Time';
   static String get totalDuration => 'Total Duration';
   static String get avgSpeed => 'Avg Speed';
   static String get maxElevation => 'Max Elevation';
@@ -147,10 +156,15 @@ class AppStrings {
   static String get placesVisited => 'Places Visited';
   static String get noPlacesAdded => 'No places added yet';
   static String get saveAndView => 'Save & View Hike';
+  static String get yourThoughts => 'Your Thoughts';
+  static String get tags => 'Tags';
+  static String get enterTags => 'Enter tags (comma separated)';
+  static String get enterDescription => 'Enter description';
 
   // Hikes List
   static String get myHikes => 'My Hikes';
   static String get hikeHistory => 'Hike History';
+  static String get recentHikes => 'Recent Hikes';
   static String get noHikesMessage => 'No hikes yet — start your first one';
 
   // Hike Details

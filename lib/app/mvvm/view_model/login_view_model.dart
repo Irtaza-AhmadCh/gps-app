@@ -32,7 +32,7 @@ class LoginViewModel extends GetxController {
     isLoading.value = false;
 
     LoggerService.logInfo('Login successful');
-    Get.offAllNamed(AppRoutes.dashboard);
+    Get.offAllNamed(AppRoutes.bottomBarView);
   }
 
   void goToSignup() {

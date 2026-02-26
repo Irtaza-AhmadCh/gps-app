@@ -14,6 +14,27 @@ class HomeController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxBool isLocationServiceEnabled = true.obs;
 
+  // Dashboard specific
+  final RxInt sliderIndex = 0.obs;
+  final RxList<String> sliderImages = [
+    'https://images.pexels.com/photos/618833/pexels-photo-618833.jpeg',
+    'https://images.pexels.com/photos/1365425/pexels-photo-1365425.jpeg',
+    'https://images.pexels.com/photos/372098/pexels-photo-372098.jpeg',
+  ].obs;
+
+  // Mock Stats (Real data would come from repository or calculations)
+  final RxString totalPlaces = '12'.obs;
+  final RxString totalDistanceStat = '45 km'.obs;
+  final RxString totalTimeStat = '12h 30m'.obs;
+
+  /// Get recent hikes (max 5)
+  List<Hike> get recentHikes {
+    if (savedHikes.length <= 5) {
+      return savedHikes;
+    }
+    return savedHikes.sublist(0, 5);
+  }
+
   @override
   void onInit() {
     super.onInit();
@@ -139,5 +160,24 @@ class HomeController extends GetxController {
       'HomeController.viewHikeSummary: Navigating to summary for hike ${hike.id}',
     );
     Get.toNamed('/summary', arguments: hike);
+  }
+
+  /// Update slider index
+  void updateSliderIndex(int index) {
+    sliderIndex.value = index;
+  }
+
+  /// Navigate to all hikes list
+  void viewAllHikes() {
+    LoggerService.i('HomeController.viewAllHikes: Navigating to hikes list');
+    Get.toNamed('/hikes-list');
+  }
+
+  /// Navigate to hike details
+  void viewHikeDetails(Hike hike) {
+    LoggerService.i(
+      'HomeController.viewHikeDetails: Navigating to details for hike ${hike.id}',
+    );
+    Get.toNamed('/hike-details', arguments: hike);
   }
 }

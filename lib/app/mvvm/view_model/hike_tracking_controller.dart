@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
+import '../../config/app_routes.dart';
 import '../../services/logger_service.dart';
 import '../../repository/hike_repository.dart';
 import '../model/track_point.dart';
@@ -251,7 +251,7 @@ class HikeTrackingController extends GetxController {
     );
   }
 
-  /// Stop tracking and optionally save hike
+  /// Stop tracking and navigate to details view
   Future<void> stopTracking({bool saveHike = true}) async {
     LoggerService.i(
       'HikeTrackingController.stopTracking: Stopping tracking, saveHike: $saveHike',
@@ -264,7 +264,23 @@ class HikeTrackingController extends GetxController {
     isPaused.value = false;
 
     if (saveHike && trackPoints.isNotEmpty) {
-      await _showSaveDialog();
+      if (_startTime == null) {
+        LoggerService.e('HikeTrackingController: Start time is null');
+        Get.back();
+        return;
+      }
+
+      // Create temporary Hike object
+      final hike = _repository.createHikeObject(
+        name: 'Hike ${DateTime.now().day}/${DateTime.now().month}',
+        points: List.from(trackPoints),
+        startTime: _startTime!,
+        endTime: DateTime.now(),
+      );
+
+      // Navigate to Add Details View with the hike object
+      // Using offNamed so user can't go back to tracking state easily without restarting
+      Get.offNamed(AppRoutes.addHikeDetails, arguments: hike);
     } else {
       Get.back(); // Return to home
       LoggerService.i(
@@ -273,96 +289,5 @@ class HikeTrackingController extends GetxController {
     }
   }
 
-  /// Show dialog to save hike
-  Future<void> _showSaveDialog() async {
-    LoggerService.i(
-      'HikeTrackingController._showSaveDialog: Showing save hike dialog',
-    );
-    final TextEditingController nameController = TextEditingController(
-      text: 'Hike ${DateTime.now().day}/${DateTime.now().month}',
-    );
-
-    await Get.dialog(
-      AlertDialog(
-        title: const Text('Save Hike'),
-        content: TextField(
-          controller: nameController,
-          decoration: const InputDecoration(
-            labelText: 'Hike Name',
-            hintText: 'Enter a name for this hike',
-          ),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Get.back(); // Close dialog
-              Get.back(); // Return to home without saving
-              LoggerService.i(
-                'HikeTrackingController._showSaveDialog: User discarded hike',
-              );
-            },
-            child: const Text('Discard'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final name = nameController.text.trim();
-              if (name.isEmpty) {
-                Get.snackbar(
-                  'Invalid Name',
-                  'Please enter a hike name',
-                  snackPosition: SnackPosition.BOTTOM,
-                );
-                LoggerService.i(
-                  'HikeTrackingController._showSaveDialog: Invalid hike name entered',
-                );
-                return;
-              }
-
-              Get.back(); // Close dialog
-              await _saveHike(name);
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Save hike to storage
-  Future<void> _saveHike(String name) async {
-    try {
-      LoggerService.i('HikeTrackingController._saveHike: Saving hike: $name');
-      final hike = await _repository.createHike(
-        name: name,
-        points: trackPoints,
-        startTime: _startTime!,
-        endTime: DateTime.now(),
-      );
-
-      Get.snackbar(
-        'Success',
-        'Hike saved successfully',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-
-      LoggerService.i(
-        'HikeTrackingController._saveHike: Hike saved successfully, navigating to summary',
-      );
-      // Navigate to summary
-      Get.offNamed('/summary', arguments: hike);
-    } catch (e, stackTrace) {
-      LoggerService.e(
-        'HikeTrackingController._saveHike: Failed to save hike: $e',
-        error: e,
-        stackTrace: stackTrace,
-      );
-      Get.snackbar(
-        'Error',
-        'Failed to save hike: $e',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-      Get.back(); // Return to home
-    }
-  }
+  // _showSaveDialog and _saveHike are no longer needed here as logic moved to AddHikeDetailsViewModel
 }

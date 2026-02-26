@@ -18,7 +18,11 @@ class OnboardingViewModel extends GetxController {
   }
 
   void next() {
-    if (currentPage.value < 3) {
+    if (currentPage.value < 2) {
+      LoggerService.logInfo(
+        'Onboarding next page current page ${currentPage.value}',
+      );
+
       pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,

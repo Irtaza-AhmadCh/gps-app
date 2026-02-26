@@ -16,4 +16,9 @@ class AppAssets {
   // Icons
   static const String gpsIcon = '$_icons/gps_icon.svg'; // Placeholder
   static const String shieldIcon = '$_icons/shield_icon.svg'; // Placeholder
+
+  // Bottom Navigation Icons
+  static const String homeIcon = '$_icons/home_icon.svg'; // Placeholder
+  static const String recordIcon = '$_icons/record_icon.svg'; // Placeholder
+  static const String profileIcon = '$_icons/profile_icon.svg'; // Placeholder
 }

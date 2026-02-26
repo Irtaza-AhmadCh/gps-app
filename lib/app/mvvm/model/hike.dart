@@ -1,7 +1,7 @@
 import 'package:hive/hive.dart';
 import 'track_point.dart';
 
-part 'hike.g.dart'; // ADD THIS LINE - this is what's missing!
+part 'hike.g.dart';
 
 /// Represents a complete hike with route and statistics
 /// Stored locally using Hive for offline access
@@ -34,6 +34,20 @@ class Hike {
   @HiveField(8)
   final int durationSeconds;
 
+  // --- New Fields for Updated Workflow ---
+
+  @HiveField(9)
+  final String? place;
+
+  @HiveField(10)
+  final String? description;
+
+  @HiveField(11)
+  final List<String>? tags;
+
+  @HiveField(12)
+  final List<String>? imageUrls;
+
   const Hike({
     required this.id,
     required this.name,
@@ -44,6 +58,10 @@ class Hike {
     required this.elevationGain,
     required this.elevationLoss,
     required this.durationSeconds,
+    this.place,
+    this.description,
+    this.tags,
+    this.imageUrls,
   });
 
   Duration get duration => Duration(seconds: durationSeconds);
@@ -56,6 +74,10 @@ class Hike {
     required double totalDistance,
     required double elevationGain,
     required double elevationLoss,
+    String? place,
+    String? description,
+    List<String>? tags,
+    List<String>? imageUrls,
   }) {
     final duration = endTime.difference(startTime);
     return Hike(
@@ -68,6 +90,35 @@ class Hike {
       elevationGain: elevationGain,
       elevationLoss: elevationLoss,
       durationSeconds: duration.inSeconds,
+      place: place,
+      description: description,
+      tags: tags,
+      imageUrls: imageUrls,
+    );
+  }
+
+  // CopyWith mainly for updating the hike with details after recording
+  Hike copyWith({
+    String? name,
+    String? place,
+    String? description,
+    List<String>? tags,
+    List<String>? imageUrls,
+  }) {
+    return Hike(
+      id: id,
+      name: name ?? this.name,
+      points: points,
+      startTime: startTime,
+      endTime: endTime,
+      totalDistance: totalDistance,
+      elevationGain: elevationGain,
+      elevationLoss: elevationLoss,
+      durationSeconds: durationSeconds,
+      place: place ?? this.place,
+      description: description ?? this.description,
+      tags: tags ?? this.tags,
+      imageUrls: imageUrls ?? this.imageUrls,
     );
   }
 

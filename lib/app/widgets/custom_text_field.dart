@@ -38,6 +38,7 @@ class CustomTextField extends StatelessWidget {
         cursorColor: AppColors.primary,
         decoration: InputDecoration(
           labelText: label,
+          floatingLabelAlignment: FloatingLabelAlignment.start,
           labelStyle: AppTextStyle.labelMedium,
           border: InputBorder.none,
           suffixIcon: suffixIcon,

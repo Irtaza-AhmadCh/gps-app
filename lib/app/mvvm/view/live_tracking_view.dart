@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart' hide WidgetPaddingX;
 import 'package:gps/app/widgets/glass_container.dart';
+import '../../widgets/app_bars.dart';
 import '../../config/app_colors.dart';
 import '../../config/app_strings.dart';
 import '../../config/app_text_style.dart';
@@ -36,30 +37,12 @@ class LiveTrackingView extends GetView<HikeTrackingController> {
                   bottom: BorderSide(color: AppColors.glassBorder, width: 1),
                 ),
               ),
-              child: AppBar(
+              child: CustomAppBar(
                 backgroundColor: Colors.transparent,
-                elevation: 0,
                 centerTitle: true,
-
-                title: Text(
-                  AppStrings.liveTracking,
-                  style: AppTextStyle.headlineMedium.copyWith(
-                    letterSpacing: 0.8,
-                  ),
-                ),
-
-                leading: IconButton(
-                  icon: Container(
-                    padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.glassBackground,
-                      border: Border.all(color: AppColors.glassBorder),
-                    ),
-                    child: Center(child: const Icon(Icons.arrow_back)),
-                  ),
-                  onPressed: _showStopConfirmation,
-                ),
+                title: AppStrings.liveTracking,
+                showBackButton: true,
+                onBackTap: _showStopConfirmation,
               ),
             ),
           ),

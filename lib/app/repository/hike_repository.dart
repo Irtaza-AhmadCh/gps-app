@@ -106,22 +106,22 @@ class HikeRepository {
     return _elevationService.calculateElevationChange(points);
   }
 
-  /// Create and save a hike
-  Future<Hike> createHike({
+  /// Create a Hike object without saving it immediately (for UI preview/editing)
+  Hike createHikeObject({
     required String name,
     required List<TrackPoint> points,
     required DateTime startTime,
     required DateTime endTime,
-  }) async {
+  }) {
     LoggerService.i(
-      'HikeRepository.createHike: creating hike "$name" with ${points.length} points',
+      'HikeRepository.createHikeObject: creating hike object "$name" with ${points.length} points',
     );
     // Calculate statistics
     final totalDistance = calculateTotalDistance(points);
     final elevationChange = _elevationService.calculateElevationChange(points);
 
     // Create hike object
-    final hike = Hike.create(
+    return Hike.create(
       name: name,
       points: points,
       startTime: startTime,
@@ -130,11 +130,28 @@ class HikeRepository {
       elevationGain: elevationChange.gain,
       elevationLoss: elevationChange.loss,
     );
+  }
 
-    // Save to storage
-    LoggerService.i('HikeRepository.createHike: saving hike to storage');
+  /// Save an existing Hike object to storage
+  Future<void> saveHike(Hike hike) async {
+    LoggerService.i('HikeRepository.saveHike: saving hike "${hike.name}"');
     await _storageService.saveHike(hike);
+  }
 
+  /// Create and save a hike (Legacy/Direct Save)
+  Future<Hike> createHike({
+    required String name,
+    required List<TrackPoint> points,
+    required DateTime startTime,
+    required DateTime endTime,
+  }) async {
+    final hike = createHikeObject(
+      name: name,
+      points: points,
+      startTime: startTime,
+      endTime: endTime,
+    );
+    await saveHike(hike);
     return hike;
   }
 

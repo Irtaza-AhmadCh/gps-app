@@ -6,16 +6,16 @@ import '../config/utils.dart';
 
 class GlassButton extends StatelessWidget {
   final VoidCallback onTap;
-  final IconData icon;
+  final IconData? icon;
   final String label;
-  final Color accentColor;
+  final Color? accentColor;
 
   const GlassButton({
     super.key,
     required this.onTap,
-    required this.icon,
+    this.icon,
     required this.label,
-    required this.accentColor,
+    this.accentColor,
   });
 
   @override
@@ -30,10 +30,7 @@ class GlassButton extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.glassBackground,
               borderRadius: BorderRadius.circular(100),
-              border: Border.all(
-                color: AppColors.glassBorder,
-                width: 1,
-              ),
+              border: Border.all(color: AppColors.glassBorder, width: 1),
               boxShadow: [
                 BoxShadow(
                   color: AppColors.glassShadow,
@@ -45,15 +42,12 @@ class GlassButton extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(icon, color: accentColor),
+                if (icon != null) Icon(icon, color: accentColor),
 
-                if(label.isNotEmpty)
-                  8.width,
+                if (label.isNotEmpty) 8.width,
                 Text(
                   label,
-                  style: AppTextStyle.bodyMedium.copyWith(
-                    letterSpacing: 0.6,
-                  ),
+                  style: AppTextStyle.bodyMedium.copyWith(letterSpacing: 0.6),
                 ),
               ],
             ).paddingSymmetric(horizontal: 20, vertical: 14),

@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../config/app_colors.dart';
 import '../../config/app_strings.dart';
 import '../../config/app_text_style.dart';
 import '../../config/utils.dart';
+import '../../widgets/app_bars.dart';
+import '../../widgets/glass_container.dart';
+import '../../widgets/custom_cached_image.dart';
 import '../view_model/home_controller.dart';
 
-/// Home View - Main screen showing saved hikes and start button
+/// Home View - Redesigned Dashboard
 class HomeView extends GetView<HomeController> {
   const HomeView({super.key});
 
@@ -14,86 +18,217 @@ class HomeView extends GetView<HomeController> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(AppStrings.homeTitle, style: AppTextStyle.headlineLarge),
-        backgroundColor: AppColors.surface,
-        elevation: 0,
+      appBar: CustomAppBar(
+        showBackButton: false,
+        titleWidget: _buildProfileHeader(),
+        actions: [
+          IconButton(
+            onPressed: () {
+              // Get.toNamed(AppRoutes.notificationView);
+              // Route generic until implemented or assuming AppRoutes exists
+            },
+            icon: GlassContainer(
+              padding: EdgeInsets.all(8.sp),
+              borderRadius: 30,
+              child: const Icon(
+                Icons.notifications_none_rounded,
+                color: AppColors.white,
+              ),
+            ),
+          ),
+          16.width,
+        ],
       ),
-      body: Obx(() {
-        // Show permission banner if GPS not granted
-        if (!controller.hasGpsPermission.value) {
-          return _buildPermissionBanner();
-        }
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            /// 🏞️ Image Slider
+            _buildImageSlider(),
 
-        // Show loading indicator
-        if (controller.isLoading.value) {
-          return const Center(
-            child: CircularProgressIndicator(color: AppColors.primary),
-          );
-        }
+            24.height,
 
-        // Show empty state
-        if (controller.savedHikes.isEmpty) {
-          return _buildEmptyState();
-        }
+            /// 📊 Stats Section
+            _buildStatsSection(),
 
-        // Show hikes list
-        return _buildHikesList();
-      }),
-      floatingActionButton: Obx(() {
-        return FloatingActionButton.extended(
-          onPressed: controller.hasGpsPermission.value
-              ? controller.startNewHike
-              : controller.requestPermission,
-          backgroundColor: AppColors.primary,
-          icon: Icon(
-            controller.hasGpsPermission.value
-                ? Icons.add_location
-                : Icons.location_off,
-            color: AppColors.textPrimary,
-          ),
-          label: Text(
-            controller.hasGpsPermission.value
-                ? AppStrings.startHike
-                : AppStrings.enableGps,
-            style: AppTextStyle.button,
-          ),
-        );
-      }),
+            24.height,
+
+            /// 🌲 Recent Hikes Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  AppStrings.recentHikes,
+                  style: AppTextStyle.headlineMedium,
+                ),
+                if (controller.savedHikes.length > 5)
+                  TextButton(
+                    onPressed: controller.viewAllHikes,
+                    child: Text(
+                      'View All',
+                      style: AppTextStyle.button.copyWith(
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+
+            12.height,
+
+            /// Hikes List
+            _buildRecentHikesResult(),
+
+            // Bottom spacing
+            80.height,
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildPermissionBanner() {
-    return Center(
-      child: Container(
-        margin: const EdgeInsets.all(24),
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: AppColors.cardBackground,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.location_off, size: 64, color: AppColors.warning),
-            const SizedBox(height: 16),
-            Text(
-              AppStrings.gpsPermissionRequired,
-              style: AppTextStyle.headlineMedium,
-              textAlign: TextAlign.center,
+  /// 👤 Header with Profile & Welcome Text
+  Widget _buildProfileHeader() {
+    return Row(
+      children: [
+        16.width,
+        Container(
+          width: 40.sp,
+          height: 40.sp,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: AppColors.primary, width: 2),
+            image: const DecorationImage(
+              image: NetworkImage(
+                'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg',
+              ), // Mock profile
+              fit: BoxFit.cover,
             ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: controller.requestPermission,
-              icon: const Icon(Icons.location_on),
-              label: Text(AppStrings.enableGps),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
-                ),
+          ),
+        ),
+        12.width,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              AppStrings.welcomeBack,
+              style: AppTextStyle.bodySmall.copyWith(
+                color: AppColors.textSecondary,
               ),
+            ),
+            Text(
+              'Hiker John', // Mock Name
+              style: AppTextStyle.headlineSmall,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// 🖼️ Image Slider with Dot Indicators
+  Widget _buildImageSlider() {
+    return GlassContainer(
+      padding: EdgeInsets.zero,
+      height: 200.h,
+      borderRadius: 24,
+      child: Stack(
+        alignment: Alignment.bottomLeft,
+        children: [
+          PageView.builder(
+            itemCount: controller.sliderImages.length,
+            onPageChanged: controller.updateSliderIndex,
+            itemBuilder: (context, index) {
+              return CustomCachedImage(
+                imageUrl: controller.sliderImages[index],
+                fit: BoxFit.cover,
+                width: double.infinity,
+                borderRadius: 24,
+              );
+            },
+          ),
+
+          // Overlay Gradient
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.transparent, Colors.black.withOpacity(0.6)],
+              ),
+            ),
+          ),
+
+          // Content Overlay
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  AppStrings.readyToExplore,
+                  style: AppTextStyle.headlineMedium.copyWith(
+                    color: Colors.white,
+                  ),
+                ),
+                8.height,
+                // Custom Dot Indicator
+                Obx(
+                  () => Row(
+                    children: List.generate(
+                      controller.sliderImages.length,
+                      (index) => AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        margin: const EdgeInsets.only(right: 6),
+                        height: 6,
+                        width: controller.sliderIndex.value == index ? 24 : 6,
+                        decoration: BoxDecoration(
+                          color: controller.sliderIndex.value == index
+                              ? AppColors.primary
+                              : Colors.white.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 📊 Stats Section (Circular/Grid layout)
+  Widget _buildStatsSection() {
+    return GlassContainer(
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      borderRadius: 24,
+      child: Obx(
+        () => Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildStatItem(
+              Icons.place_outlined,
+              controller.totalPlaces.value,
+              AppStrings.totalPlaces,
+            ),
+            Container(width: 1, height: 40, color: AppColors.divider),
+            _buildStatItem(
+              Icons.straighten,
+              controller.totalDistanceStat.value,
+              AppStrings.distance,
+            ),
+            Container(width: 1, height: 40, color: AppColors.divider),
+            _buildStatItem(
+              Icons.timer_outlined,
+              controller.totalTimeStat.value,
+              AppStrings.totalTime,
             ),
           ],
         ),
@@ -101,150 +236,148 @@ class HomeView extends GetView<HomeController> {
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.hiking,
-            size: 80,
-            color: AppColors.textSecondary.withOpacity(0.5),
+  Widget _buildStatItem(IconData icon, String value, String label) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.1),
+            shape: BoxShape.circle,
           ),
-          const SizedBox(height: 16),
-          Text(
-            AppStrings.noHikesYet,
-            style: AppTextStyle.bodyLarge.copyWith(
-              color: AppColors.textSecondary,
-            ),
-            textAlign: TextAlign.center,
+          child: Icon(icon, color: AppColors.primary, size: 20),
+        ),
+        8.height,
+        Text(value, style: AppTextStyle.headlineSmall.copyWith(fontSize: 16)),
+        4.height,
+        Text(
+          label,
+          style: AppTextStyle.bodySmall.copyWith(
+            color: AppColors.textSecondary,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildHikesList() {
-    return RefreshIndicator(
-      onRefresh: controller.refreshHikes,
-      color: AppColors.primary,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: controller.savedHikes.length,
-        itemBuilder: (context, index) {
-          final hike = controller.savedHikes[index];
-          return Dismissible(
-            key: Key(hike.id),
-            direction: DismissDirection.endToStart,
-            background: Container(
-              alignment: Alignment.centerRight,
-              padding: const EdgeInsets.only(right: 20),
-              decoration: BoxDecoration(
-                color: AppColors.error,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.delete, color: Colors.white),
+  /// 🌲 Recent Hikes List (Reactive)
+  Widget _buildRecentHikesResult() {
+    return Obx(() {
+      if (controller.isLoading.value) {
+        return const Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        );
+      }
+
+      if (controller.savedHikes.isEmpty) {
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Column(
+              children: [
+                const Icon(
+                  Icons.hiking,
+                  size: 48,
+                  color: AppColors.textSecondary,
+                ),
+                12.height,
+                Text(
+                  AppStrings.noHikesMessage,
+                  style: AppTextStyle.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
             ),
-            confirmDismiss: (direction) async {
-              return await Get.dialog<bool>(
-                AlertDialog(
-                  title: Text(AppStrings.deleteHike),
-                  content: Text(AppStrings.confirmDelete),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Get.back(result: false),
-                      child: Text(AppStrings.cancel),
-                    ),
-                    ElevatedButton(
-                      onPressed: () => Get.back(result: true),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.error,
+          ),
+        );
+      }
+
+      // Show top 5 recent hikes
+      final displayHikes = controller.recentHikes;
+
+      return Column(
+        children: displayHikes.map((hike) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: GestureDetector(
+              onTap: () => controller.viewHikeDetails(hike),
+              child: GlassContainer(
+                padding: const EdgeInsets.all(12),
+                borderRadius: 16,
+                child: Row(
+                  children: [
+                    // Hike Thumb
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        width: 60,
+                        height: 60,
+                        color: AppColors.surface,
+                        child: const Icon(
+                          Icons.landscape,
+                          color: AppColors.textSecondary,
+                        ),
+                        // Or use image if available in Hike model
                       ),
-                      child: Text(AppStrings.delete),
+                    ),
+                    16.width,
+                    // Info
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            hike.name,
+                            style: AppTextStyle.headlineSmall.copyWith(
+                              fontSize: 16,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          6.height,
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.calendar_today,
+                                size: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                              4.width,
+                              Text(
+                                Utils.formatDateTime(hike.startTime),
+                                style: AppTextStyle.bodySmall,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Stats Column
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          Utils.formatDistance(hike.totalDistance),
+                          style: AppTextStyle.bodyMedium.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        4.height,
+                        Text(
+                          Utils.formatDuration(hike.duration),
+                          style: AppTextStyle.bodySmall,
+                        ),
+                      ],
                     ),
                   ],
-                ),
-              );
-            },
-            onDismissed: (direction) {
-              controller.deleteHike(hike.id);
-            },
-            child: Card(
-              color: AppColors.cardBackground,
-              margin: const EdgeInsets.only(bottom: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: InkWell(
-                onTap: () => controller.viewHikeSummary(hike),
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.hiking,
-                            color: AppColors.primary,
-                            size: 24,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              hike.name,
-                              style: AppTextStyle.headlineSmall,
-                            ),
-                          ),
-                          const Icon(
-                            Icons.chevron_right,
-                            color: AppColors.textSecondary,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        Utils.formatDateTime(hike.startTime),
-                        style: AppTextStyle.bodySmall,
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _buildHikeStatChip(
-                            Icons.straighten,
-                            Utils.formatDistance(hike.totalDistance),
-                          ),
-                          _buildHikeStatChip(
-                            Icons.timer,
-                            Utils.formatDuration(hike.duration),
-                          ),
-                          _buildHikeStatChip(
-                            Icons.trending_up,
-                            Utils.formatElevationSimple(hike.elevationGain),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
                 ),
               ),
             ),
           );
-        },
-      ),
-    );
-  }
-
-  Widget _buildHikeStatChip(IconData icon, String value) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 16, color: AppColors.textSecondary),
-        const SizedBox(width: 4),
-        Text(value, style: AppTextStyle.bodySmall),
-      ],
-    );
+        }).toList(),
+      );
+    });
   }
 }

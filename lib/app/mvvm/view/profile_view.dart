@@ -5,6 +5,7 @@ import '../../config/app_text_style.dart';
 import '../../config/app_strings.dart';
 import '../../widgets/glass_container.dart';
 import '../../widgets/custom_button.dart';
+import '../../widgets/app_bars.dart';
 import '../view_model/profile_view_model.dart';
 
 class ProfileView extends GetView<ProfileViewModel> {
@@ -14,12 +15,7 @@ class ProfileView extends GetView<ProfileViewModel> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(AppStrings.profile, style: AppTextStyle.headlineMedium),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-      ),
+      appBar: CustomAppBar(title: AppStrings.profile, showBackButton: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(

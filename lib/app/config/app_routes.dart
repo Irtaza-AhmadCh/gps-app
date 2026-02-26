@@ -9,6 +9,7 @@ class AppRoutes {
   static const String permission = '/permission';
   static const String dashboard = '/dashboard';
   static const String profile = '/profile';
+  static const String bottomBarView = '/bottom-bar';
 
   // Existing routes - keeping for backward compatibility if needed during migration
   static const String home = '/home'; // Will likely be replaced by dashboard
@@ -16,7 +17,7 @@ class AppRoutes {
   static const String summary = '/summary';
 
   // New routes for redesigned UI
-  static const String hikeCompletion = '/hike-completion';
+  // static const String hikeCompletion = '/hike-completion';
   static const String addHikeDetails = '/add-hike-details';
   static const String hikesList = '/hikes-list';
   static const String hikeDetails = '/hike-details';

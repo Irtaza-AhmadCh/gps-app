@@ -5,6 +5,7 @@ import '../../config/app_text_style.dart';
 import '../../config/app_strings.dart';
 import '../../config/utils.dart';
 import '../../widgets/glass_container.dart';
+import '../../widgets/app_bars.dart';
 import '../view_model/hikes_list_view_model.dart';
 
 /// Hikes List View - Browse all saved hikes
@@ -15,11 +16,7 @@ class HikesListView extends GetView<HikesListViewModel> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(AppStrings.myHikes, style: AppTextStyle.headlineLarge),
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-      ),
+      appBar: CustomAppBar(title: AppStrings.myHikes, showBackButton: true),
       body: Obx(() {
         // Show permission banner if GPS not granted
         if (!controller.hasGpsPermission.value) {
@@ -41,13 +38,6 @@ class HikesListView extends GetView<HikesListViewModel> {
         // Show hikes list
         return _buildHikesList();
       }),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: controller.startNewHike,
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.eerieBlack,
-        icon: const Icon(Icons.add_location),
-        label: Text(AppStrings.startHike, style: AppTextStyle.button),
-      ),
     );
   }
 
@@ -73,7 +63,7 @@ class HikesListView extends GetView<HikesListViewModel> {
               label: Text(AppStrings.enableGps),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.eerieBlack,
+                foregroundColor: AppColors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 32,
                   vertical: 16,

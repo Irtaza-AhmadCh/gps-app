@@ -26,13 +26,17 @@ class HikeAdapter extends TypeAdapter<Hike> {
       elevationGain: fields[6] as double,
       elevationLoss: fields[7] as double,
       durationSeconds: fields[8] as int,
+      place: fields[9] as String?,
+      description: fields[10] as String?,
+      tags: (fields[11] as List?)?.cast<String>(),
+      imageUrls: (fields[12] as List?)?.cast<String>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, Hike obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(13)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -50,7 +54,15 @@ class HikeAdapter extends TypeAdapter<Hike> {
       ..writeByte(7)
       ..write(obj.elevationLoss)
       ..writeByte(8)
-      ..write(obj.durationSeconds);
+      ..write(obj.durationSeconds)
+      ..writeByte(9)
+      ..write(obj.place)
+      ..writeByte(10)
+      ..write(obj.description)
+      ..writeByte(11)
+      ..write(obj.tags)
+      ..writeByte(12)
+      ..write(obj.imageUrls);
   }
 
   @override

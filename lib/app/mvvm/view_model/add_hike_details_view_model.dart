@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../services/logger_service.dart';
 import '../../config/app_routes.dart';
 import '../model/hike.dart';
+import '../../repository/hike_repository.dart';
 
 /// Place model for UI (mock data)
 class Place {
@@ -15,9 +16,13 @@ class Place {
 /// ViewModel for Add Hike Details screen
 /// Allows user to add title, images (mock), and places visited
 class AddHikeDetailsViewModel extends GetxController {
+  final HikeRepository _hikeRepository = HikeRepository();
   Hike? hike;
 
   final titleController = TextEditingController();
+  final descriptionController = TextEditingController(); // New
+  final tagsController = TextEditingController(); // New
+
   final RxList<String> mockImageUrls = <String>[].obs;
   final RxList<Place> places = <Place>[].obs;
 
@@ -30,8 +35,19 @@ class AddHikeDetailsViewModel extends GetxController {
     super.onInit();
     hike = Get.arguments as Hike?;
 
+    if (hike == null) {
+      LoggerService.e('AddHikeDetailsViewModel.onInit: No hike provided!');
+      Get.back(); // Should probably navigate to dashboard
+      return;
+    }
+
     // Pre-fill with default title
     titleController.text = hike?.name ?? 'My Hike';
+
+    // Add some initial mock images if list is empty
+    if (mockImageUrls.isEmpty) {
+      addMockImage();
+    }
 
     LoggerService.logInfo(
       'AddHikeDetailsViewModel.onInit: Editing hike - ${hike?.name}',
@@ -91,29 +107,57 @@ class AddHikeDetailsViewModel extends GetxController {
     );
   }
 
-  /// Save and navigate to hike details (UI only for now)
-  void saveAndView() {
+  /// Save and navigate to hike details
+  Future<void> saveAndView() async {
+    if (hike == null) return;
+
     final title = titleController.text.trim();
+    final description = descriptionController.text.trim();
+    final tagsString = tagsController.text.trim();
+    final List<String> tags = tagsString.isNotEmpty
+        ? tagsString.split(',').map((e) => e.trim()).toList()
+        : <String>[];
+
+    // Use first place as the main place if available
+    final mainPlace = places.isNotEmpty ? places.first.name : null;
 
     LoggerService.logInfo(
       'AddHikeDetailsViewModel.saveAndView: Saving hike details - $title',
     );
-    LoggerService.logInfo(
-      'AddHikeDetailsViewModel.saveAndView: Images: ${mockImageUrls.length}, Places: ${places.length}',
+
+    // Create updated hike object
+    final updatedHike = hike!.copyWith(
+      name: title.isNotEmpty ? title : hike!.name,
+      place: mainPlace,
+      description: description,
+      tags: tags,
+      imageUrls: List.from(mockImageUrls),
     );
 
-    // Navigate to hike details, removing all intermediate completion/add flows
-    // Goal: Stack = Dashboard -> HikeDetails
-    Get.offNamedUntil(
-      AppRoutes.hikeDetails,
-      (route) => route.settings.name == AppRoutes.dashboard,
-      arguments: hike,
-    );
+    try {
+      // Save using repository
+      await _hikeRepository.saveHike(updatedHike);
+
+      Get.snackbar('Success', 'Hike saved successfully');
+
+      // Navigate to hike details, removing all intermediate completion/add flows
+      // Goal: Stack = Dashboard -> HikeDetails
+      Get.offNamedUntil(
+        AppRoutes.hikeDetails,
+        (route) => route.settings.name == AppRoutes.dashboard,
+        arguments: updatedHike,
+      );
+    } catch (e) {
+      LoggerService.e('AddHikeDetailsViewModel: Error saving hike: $e');
+      Get.snackbar('Error', 'Failed to save hike');
+    }
   }
 
   @override
   void onClose() {
     titleController.dispose();
+    descriptionController.dispose();
+    tagsController.dispose();
     placeNameController.dispose();
     placeDescriptionController.dispose();
     super.onClose();

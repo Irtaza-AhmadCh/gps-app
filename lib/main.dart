@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+
 import 'package:gps/app/mvvm/model/map_skin_modal.dart';
 import 'app/config/app_routes.dart';
 import 'app/config/app_pages.dart';
@@ -14,13 +16,9 @@ void main() async {
   try {
     LoggerService.i('main: Starting application initialization');
 
-    // Initialize Hive and Storage Service (opens boxes, registers adapters)
     await StorageService.instance.init();
-
-    // Initialize FMTC and Map Tile Service (initializes backend, creates store)
     await MapTileService.instance.init();
 
-    // Register map skins
     final skins = [
       MapSkin(
         name: 'Default',
@@ -40,6 +38,7 @@ void main() async {
         attribution: '© ESRI, Maxar, Earthstar Geographics',
       ),
     ];
+
     MapTileService.instance.registerSkins(skins);
 
     LoggerService.i('main: Application initialization complete');
@@ -59,28 +58,30 @@ class HikingTrackerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GetMaterialApp(
-      title: 'Hiking Tracker',
-      debugShowCheckedModeBanner: false,
+    return ScreenUtilInit(
+      designSize: const Size(375, 812), // iPhone X base (recommended)
+      minTextAdapt: true,
+      splitScreenMode: true,
+      builder: (_, __) {
+        return GetMaterialApp(
+          title: 'Hiking Tracker',
+          debugShowCheckedModeBanner: false,
 
-      // Dark theme optimized for outdoor use
-      theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: AppColors.background,
-        primaryColor: AppColors.primary,
-        colorScheme: ColorScheme.dark(
-          primary: AppColors.primary,
-          surface: AppColors.dimGrey,
-          error: AppColors.error,
-        ),
-        appBarTheme: AppBarTheme(
-          backgroundColor: AppColors.background,
-          elevation: 0,
-        ),
-      ),
+          theme: ThemeData.dark().copyWith(
+            scaffoldBackgroundColor: AppColors.background,
+            primaryColor: AppColors.primary,
+            colorScheme: ColorScheme.dark(
+              primary: AppColors.primary,
+              surface: AppColors.dimGrey,
+              error: AppColors.error,
+            ),
+            appBarTheme: const AppBarTheme(elevation: 0),
+          ),
 
-      // GetX routing
-      initialRoute: AppRoutes.splash,
-      getPages: AppPages.pages,
+          initialRoute: AppRoutes.splash,
+          getPages: AppPages.pages,
+        );
+      },
     );
   }
 }

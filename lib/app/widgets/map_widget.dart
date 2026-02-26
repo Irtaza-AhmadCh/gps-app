@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
 import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
+import 'package:gps/app/config/app_text_style.dart';
 import 'package:gps/app/config/utils.dart';
 import 'package:gps/app/widgets/glass_container.dart';
 import 'package:latlong2/latlong.dart';
@@ -18,16 +21,21 @@ class MapWidget extends StatelessWidget {
   final LatLng? center;
   final double zoom;
   final MapController? mapController;
+  final bool isInteractive;
+  final bool? showMapSkinSwitcher;
 
   const MapWidget({
     super.key,
     required this.points,
     this.currentPoint,
     this.showStartMarker = true,
+
     this.showCurrentMarker = true,
     this.center,
     this.zoom = 15.0,
     this.mapController,
+    this.isInteractive = true,
+    this.showMapSkinSwitcher,
   });
 
   @override
@@ -87,6 +95,9 @@ class MapWidget extends StatelessWidget {
             initialZoom: zoom,
             minZoom: 1,
             maxZoom: 19,
+            interactionOptions: InteractionOptions(
+              flags: isInteractive ? InteractiveFlag.all : InteractiveFlag.none,
+            ),
           ),
           children: [
             // Tile layer with offline support
@@ -109,7 +120,7 @@ class MapWidget extends StatelessWidget {
           ],
         ),
 
-        const MapSkinSwitcher(),
+        if (showMapSkinSwitcher ?? true) const MapSkinSwitcher(),
 
         // Attribution
         Positioned(
@@ -164,73 +175,98 @@ class MapWidget extends StatelessWidget {
   }
 }
 
-/// Floating widget to switch between map skins dynamically
 class MapSkinSwitcher extends StatelessWidget {
   const MapSkinSwitcher({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Get list of registered skins
-    final skins = MapTileService.instance.skinlist;
-
     return Positioned(
       top: 16,
       right: 16,
-      child: GlassContainer(
-        padding: const EdgeInsets.all(12),
-        borderRadius: 16,
-        blur: 10,
+      child: GestureDetector(
+        onTap: _openBottomSheet,
+        child: GlassContainer(
+          padding: EdgeInsets.all(10.sp),
+          borderRadius: 12.sp,
+          blur: 10,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.layers_outlined,
+                color: AppColors.white,
+                size: 18,
+              ),
+              6.width,
+              Text(
+                'Map',
+                style: AppTextStyle.bodySmall.copyWith(color: AppColors.white),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openBottomSheet() {
+    final skins = MapTileService.instance.skinlist;
+
+    Get.bottomSheet(
+      GlassContainer(
+        borderRadius: 24,
+        blur: 12,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'Map Style',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.white,
-                fontWeight: FontWeight.bold,
+            12.height,
+            Container(
+              height: 4,
+              width: 40,
+              decoration: BoxDecoration(
+                color: AppColors.white.withOpacity(0.4),
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
-            8.height, // Using your extensions for spacing
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: List.generate(skins.length, (index) {
-                final skin = skins[index];
-                return Obx(
-                  () => GestureDetector(
-                    onTap: () {
-                      MapTileService.instance.changeSkin(skin.name);
-                    },
-                    child: Container(
-                      width: 50,
-                      height: 30,
-                      margin: const EdgeInsets.symmetric(vertical: 4),
-
-                      decoration: BoxDecoration(
-                        color:
-                            MapTileService.instance.currentSkinNameRx.value ==
-                                skin.name
-                            ? AppColors.primary.withOpacity(0.8)
-                            : AppColors.dimGrey.withOpacity(0.6),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Center(
-                        child: Text(
-                          skin.name,
-                          style: const TextStyle(
-                            color: AppColors.white,
-                            fontSize: 12,
-                          ),
-                        ),
+            16.height,
+            ...skins.map(
+              (skin) => Obx(
+                () => GestureDetector(
+                  onTap: () {
+                    MapTileService.instance.changeSkin(skin.name);
+                    Get.back();
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.all(14.sp),
+                    margin: EdgeInsets.symmetric(
+                      horizontal: 6.sp,
+                      vertical: 6.sp,
+                    ),
+                    decoration: BoxDecoration(
+                      color:
+                          MapTileService.instance.currentSkinNameRx.value ==
+                              skin.name
+                          ? AppColors.primary.withOpacity(0.85)
+                          : AppColors.dimGrey.withOpacity(0.35),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Text(
+                      skin.name,
+                      style: AppTextStyle.bodyMedium.copyWith(
+                        color: AppColors.white,
                       ),
                     ),
                   ),
-                );
-              }),
+                ),
+              ),
             ),
+            20.height,
           ],
         ),
       ),
+      isScrollControlled: false,
+      backgroundColor: Colors.transparent,
     );
   }
 }
