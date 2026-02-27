@@ -9,6 +9,7 @@ class AppRoutes {
   static const String permission = '/permission';
   static const String dashboard = '/dashboard';
   static const String profile = '/profile';
+  static const String offlineRegions = '/offline_regions';
   static const String bottomBarView = '/bottom-bar';
 
   // Existing routes - keeping for backward compatibility if needed during migration

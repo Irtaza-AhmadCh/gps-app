@@ -6,13 +6,16 @@ import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
 import 'package:gps/app/config/app_text_style.dart';
 import 'package:gps/app/config/utils.dart';
 import 'package:gps/app/widgets/glass_container.dart';
+import 'package:gps/app/widgets/slope_legend_widget.dart';
 import 'package:latlong2/latlong.dart';
 import '../config/app_colors.dart';
 import '../services/map_tile_service.dart';
 import '../mvvm/model/track_point.dart';
+import '../mvvm/model/slope_segment.dart';
 
 /// Reusable map widget with OpenStreetMap
 /// Displays route polyline, markers, and handles offline behavior
+/// Supports optional slope-colored polylines via [slopeSegments]
 class MapWidget extends StatelessWidget {
   final List<TrackPoint> points;
   final TrackPoint? currentPoint;
@@ -24,18 +27,29 @@ class MapWidget extends StatelessWidget {
   final bool isInteractive;
   final bool? showMapSkinSwitcher;
 
+  /// Optional slope segments for gradient-colored polylines
+  final List<SlopeSegment>? slopeSegments;
+
+  /// Whether to show slope coloring (when slopeSegments is provided)
+  final bool showSlopeColoring;
+
+  /// Whether to show the slope legend overlay
+  final bool showSlopeLegend;
+
   const MapWidget({
     super.key,
     required this.points,
     this.currentPoint,
     this.showStartMarker = true,
-
     this.showCurrentMarker = true,
     this.center,
     this.zoom = 15.0,
     this.mapController,
     this.isInteractive = true,
     this.showMapSkinSwitcher,
+    this.slopeSegments,
+    this.showSlopeColoring = false,
+    this.showSlopeLegend = false,
   });
 
   @override
@@ -86,6 +100,9 @@ class MapWidget extends StatelessWidget {
       );
     }
 
+    // Build polyline layers (slope-colored or standard)
+    final List<Polyline> polylines = _buildPolylines(polylinePoints);
+
     return Stack(
       children: [
         FlutterMap(
@@ -103,17 +120,8 @@ class MapWidget extends StatelessWidget {
             // Tile layer with offline support
             tileService.getTileLayer(),
 
-            // Route polyline
-            if (polylinePoints.isNotEmpty)
-              PolylineLayer(
-                polylines: [
-                  Polyline(
-                    points: polylinePoints,
-                    color: AppColors.routePolyline,
-                    strokeWidth: 4.0,
-                  ),
-                ],
-              ),
+            // Route polyline(s) — slope-colored or standard
+            if (polylines.isNotEmpty) PolylineLayer(polylines: polylines),
 
             // Markers
             if (markers.isNotEmpty) MarkerLayer(markers: markers),
@@ -121,6 +129,10 @@ class MapWidget extends StatelessWidget {
         ),
 
         if (showMapSkinSwitcher ?? true) const MapSkinSwitcher(),
+
+        // Slope legend overlay
+        if (showSlopeLegend && showSlopeColoring && slopeSegments != null)
+          Positioned(bottom: 40, left: 8, child: const SlopeLegendWidget()),
 
         // Attribution
         Positioned(
@@ -138,40 +150,50 @@ class MapWidget extends StatelessWidget {
             ),
           ),
         ),
-
-        // Offline placeholder (shown when no points and potentially offline)
-        // if ()
-        //   Center(
-        //     child: Container(
-        //       padding: const EdgeInsets.all(24),
-        //       decoration: BoxDecoration(
-        //         color: AppColors.mapPlaceholder,
-        //         borderRadius: BorderRadius.circular(12),
-        //       ),
-        //       child: Column(
-        //         mainAxisSize: MainAxisSize.min,
-        //         children: [
-        //           Icon(
-        //             Icons.map_outlined,
-        //             size: 48,
-        //             color: AppColors.mapPlaceholderText,
-        //           ),
-        //           const SizedBox(height: 12),
-        //           Text(
-        //             '
-        //ting for GPS signal...',
-        //             style: TextStyle(
-        //               color: AppColors.mapPlaceholderText,
-        //               fontSize: 14,
-        //             ),
-        //             textAlign: TextAlign.center,
-        //           ),
-        //         ],
-        //       ),
-        //     ),
-        //   ),
       ],
     );
+  }
+
+  /// Build polylines for the map — either slope-colored segments or a single standard polyline
+  List<Polyline> _buildPolylines(List<LatLng> polylinePoints) {
+    if (polylinePoints.isEmpty) return [];
+
+    // If slope coloring is enabled and segments are available, render colored polylines
+    if (showSlopeColoring &&
+        slopeSegments != null &&
+        slopeSegments!.isNotEmpty) {
+      final List<Polyline> coloredPolylines = [];
+
+      for (final segment in slopeSegments!) {
+        // Guard against out-of-bounds indices
+        final start = segment.startIndex.clamp(0, polylinePoints.length - 1);
+        final end = (segment.endIndex + 1).clamp(
+          start + 1,
+          polylinePoints.length,
+        );
+
+        if (end - start < 2) continue;
+
+        coloredPolylines.add(
+          Polyline(
+            points: polylinePoints.sublist(start, end),
+            color: segment.difficulty.color,
+            strokeWidth: 5.0,
+          ),
+        );
+      }
+
+      return coloredPolylines;
+    }
+
+    // Default: single color polyline
+    return [
+      Polyline(
+        points: polylinePoints,
+        color: AppColors.routePolyline,
+        strokeWidth: 4.0,
+      ),
+    ];
   }
 }
 

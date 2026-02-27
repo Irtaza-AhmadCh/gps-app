@@ -171,4 +171,44 @@ class AppStrings {
   static String get routePreview => 'Route Preview';
   static String get hikeStats => 'Hike Stats';
   static String get places => 'Places';
+
+  // Terrain / Map
+  static String get topoMap => 'Topo';
+  static String get slopeGradient => 'Slope Gradient';
+  static String get slopeEasy => 'Easy';
+  static String get slopeModerate => 'Moderate';
+  static String get slopeSteep => 'Steep';
+  static String get slopeVerySteep => 'Very Steep';
+  static String get slopeExtreme => 'Extreme';
+  static String get slopeLegend => 'Slope';
+  static String get showSlopeColors => 'Show Slope Colors';
+
+  // Elevation Profiling
+  static String get elevationProfileTitle => 'Elevation Profile';
+  static String get totalAscent => 'Total Ascent';
+  static String get totalDescent => 'Total Descent';
+  static String get maxElevationLabel => 'Max Elevation';
+  static String get minElevationLabel => 'Min Elevation';
+  static String get elevationDataUnavailable => 'Elevation data unavailable';
+  static String get fetchingElevation => 'Fetching elevation data...';
+
+  // Offline Regions
+  static String get offlineRegions => 'Offline Regions';
+  static String get downloadRegion => 'Download Region';
+  static String get selectRegion => 'Select Region';
+  static String get downloading => 'Downloading...';
+  static String get downloadComplete => 'Download Complete';
+  static String get downloadFailed => 'Download Failed';
+  static String get deleteRegion => 'Delete Region';
+  static String get confirmDeleteRegion =>
+      'Are you sure you want to delete this offline region?';
+  static String get estimatedSize => 'Estimated Size';
+  static String get tileCount => 'Tiles';
+  static String get storageUsed => 'Storage Used';
+  static String get noOfflineRegions => 'No offline regions saved';
+  static String get wifiRecommended =>
+      'Wi-Fi recommended for downloading map regions';
+  static String get storageLimitWarning =>
+      'Storage limit approaching. Consider deleting unused regions.';
+  static String get manageRegions => 'Manage Regions';
 }

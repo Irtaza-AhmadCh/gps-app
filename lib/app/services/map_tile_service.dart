@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:get/get.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_tile_caching/flutter_map_tile_caching.dart' as FMTC;
@@ -83,5 +84,85 @@ class MapTileService {
 
   String getAttributionText() => currentSkin.attribution;
 
-  // Optional: cache stats, clear cache...
+  // ── Offline Region Download Methods ──
+
+  /// Estimate the number of tiles for a given bounds and zoom range.
+  ///
+  /// This is a rough estimate: for each zoom level, we count the number of
+  /// tiles in the bounding box using the standard slippy-map tile formula.
+  int estimateTileCount({
+    required double minLat,
+    required double maxLat,
+    required double minLng,
+    required double maxLng,
+    required int minZoom,
+    required int maxZoom,
+  }) {
+    LoggerService.i(
+      'MapTileService.estimateTileCount: estimating for zoom $minZoom-$maxZoom',
+    );
+    int total = 0;
+    for (int z = minZoom; z <= maxZoom; z++) {
+      final xMin = _tileX(minLng, z).floor();
+      final xMax = _tileX(maxLng, z).floor();
+      final yMin = _tileY(maxLat, z).floor();
+      final yMax = _tileY(minLat, z).floor();
+      total += (xMax - xMin + 1) * (yMax - yMin + 1);
+    }
+    LoggerService.i('MapTileService.estimateTileCount: estimated $total tiles');
+    return total;
+  }
+
+  /// Create a dedicated FMTC store for a downloaded region
+  Future<void> createRegionStore(String storeName) async {
+    LoggerService.i(
+      'MapTileService.createRegionStore: creating store "$storeName"',
+    );
+    final storeExists = await FMTC.FMTCStore(storeName).manage.ready;
+    if (!storeExists) {
+      await FMTC.FMTCStore(storeName).manage.create();
+    }
+  }
+
+  /// Delete a region's FMTC store and all its cached tiles
+  Future<void> deleteRegionStore(String storeName) async {
+    LoggerService.i(
+      'MapTileService.deleteRegionStore: deleting store "$storeName"',
+    );
+    try {
+      final storeExists = await FMTC.FMTCStore(storeName).manage.ready;
+      if (storeExists) {
+        await FMTC.FMTCStore(storeName).manage.delete();
+      }
+    } catch (e, stackTrace) {
+      LoggerService.e(
+        'MapTileService.deleteRegionStore: failed: $e',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  /// Get size of the main cache store in bytes (approximate)
+  Future<int> getMainStoreSizeBytes() async {
+    LoggerService.i('MapTileService.getMainStoreSizeBytes: checking size');
+    try {
+      final store = FMTC.FMTCStore(_storeName);
+      final length = await store.stats.length;
+      return length;
+    } catch (e) {
+      LoggerService.e('MapTileService.getMainStoreSizeBytes: error: $e');
+      return 0;
+    }
+  }
+
+  // ── Math helpers for tile estimation ──
+  static double _degToRad(double deg) => deg * math.pi / 180;
+  static double _tileX(double lng, int z) => (lng + 180) / 360 * (1 << z);
+  static double _tileY(double lat, int z) {
+    final latRad = _degToRad(lat);
+    return (1 - math.log(math.tan(latRad) + 1 / math.cos(latRad)) / math.pi) *
+        (1 << z) /
+        2;
+  }
 }

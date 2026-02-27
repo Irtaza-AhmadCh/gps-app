@@ -1,0 +1,126 @@
+import 'package:flutter/material.dart';
+
+class NotificationService {
+  NotificationService._(); // Private constructor (singleton style)
+
+  /// General method to show snackbar
+  static void showNotification({
+    required BuildContext context,
+    required String title,
+    required List<String> messages,
+    Color backgroundColor = Colors.blue,
+    Color textColor = Colors.white,
+    Duration duration = const Duration(seconds: 3),
+    IconData? icon,
+  }) {
+    final messenger = ScaffoldMessenger.of(context);
+
+    messenger.clearSnackBars();
+
+    messenger.showSnackBar(
+      SnackBar(
+        duration: duration,
+        backgroundColor: backgroundColor,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        content: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, color: textColor),
+              const SizedBox(width: 12),
+            ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  ...messages.map(
+                    (msg) => Padding(
+                      padding: const EdgeInsets.only(bottom: 2),
+                      child: Text(
+                        "• $msg",
+                        style: TextStyle(color: textColor),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Success Message
+  static void showSuccess({
+    required BuildContext context,
+    required String title,
+    required List<String> messages,
+  }) {
+    showNotification(
+      context: context,
+      title: title,
+      messages: messages,
+      backgroundColor: Colors.green,
+      icon: Icons.check_circle,
+    );
+  }
+
+  /// Error Message
+  static void showError({
+    required BuildContext context,
+    required String title,
+    required List<String> messages,
+  }) {
+    showNotification(
+      context: context,
+      title: title,
+      messages: messages,
+      backgroundColor: Colors.red,
+      icon: Icons.error,
+    );
+  }
+
+  /// Info Message
+  static void showInfo({
+    required BuildContext context,
+    required String title,
+    required List<String> messages,
+  }) {
+    showNotification(
+      context: context,
+      title: title,
+      messages: messages,
+      backgroundColor: Colors.blue,
+      icon: Icons.info,
+    );
+  }
+
+  /// Warning Message
+  static void showWarning({
+    required BuildContext context,
+    required String title,
+    required List<String> messages,
+  }) {
+    showNotification(
+      context: context,
+      title: title,
+      messages: messages,
+      backgroundColor: Colors.orange,
+      icon: Icons.warning,
+    );
+  }
+}

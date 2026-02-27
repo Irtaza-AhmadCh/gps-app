@@ -1,4 +1,7 @@
 import 'package:get/get.dart';
+import 'package:gps/app/mvvm/view/offline_region_view.dart';
+import 'package:gps/app/mvvm/view_model/offline_region_view_model.dart';
+import 'package:gps/app/mvvm/view_model/profile_view_model.dart';
 import '../mvvm/view/splash_view.dart';
 import '../mvvm/view_model/bindings/splash_binding.dart';
 import '../mvvm/view/home_view.dart';
@@ -67,7 +70,16 @@ class AppPages {
     GetPage(
       name: AppRoutes.profile,
       page: () => const ProfileView(),
-      binding: ProfileBinding(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut(() => ProfileViewModel());
+      }),
+    ),
+    GetPage(
+      name: AppRoutes.offlineRegions,
+      page: () => const OfflineRegionView(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut(() => OfflineRegionViewModel());
+      }),
     ),
     GetPage(
       name: AppRoutes.bottomBarView,

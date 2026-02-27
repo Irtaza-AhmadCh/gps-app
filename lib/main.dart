@@ -37,6 +37,12 @@ void main() async {
             'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
         attribution: '© ESRI, Maxar, Earthstar Geographics',
       ),
+      MapSkin(
+        name: 'Topo',
+        urlTemplate: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+        subdomains: const ['a', 'b', 'c'],
+        attribution: '© OpenTopoMap (CC-BY-SA)',
+      ),
     ];
 
     MapTileService.instance.registerSkins(skins);

@@ -36,6 +36,17 @@ class AppColors {
   static const Color elevationGain = success;
   static const Color elevationLoss = error;
 
+  // Slope Difficulty Colors
+  static const Color slopeEasy = Color(0xFF4CAF50); // Green — 0-5%
+  static const Color slopeModerate = Color(0xFFFFEB3B); // Yellow — 5-15%
+  static const Color slopeSteep = Color(0xFFFF9800); // Orange — 15-30%
+  static const Color slopeVerySteep = Color(0xFFFF5252); // Red — 30-45%
+  static const Color slopeExtreme = Color(0xFF9C27B0); // Purple — >45%
+
+  // Region Selection
+  static Color regionOverlay = primary.withOpacity(0.2);
+  static const Color regionBorder = primary;
+
   // Placeholder
   static const Color mapPlaceholder = dimGrey;
   static const Color divider = surface;
