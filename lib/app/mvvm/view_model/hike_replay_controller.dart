@@ -7,6 +7,7 @@ import '../../repository/hike_repository.dart';
 import '../../services/elevation_service.dart';
 import '../model/hike.dart';
 import '../model/track_point.dart';
+import '../../services/elevation_api_service.dart';
 
 /// Controller for Hike Summary/Replay View
 /// Manages timeline playback and synchronization of map, chart, and stats
@@ -26,6 +27,13 @@ class HikeReplayController extends GetxController {
   List<double> get smoothedElevations {
     if (hike.value == null) return [];
     return _elevationService.getSmoothedElevations(hike.value!.points);
+  }
+
+  List<double> get cumulativeDistances {
+    if (hike.value == null) return [];
+    return ElevationApiService.instance.calculateCumulativeDistances(
+      hike.value!.points,
+    );
   }
 
   TrackPoint? get currentPoint {

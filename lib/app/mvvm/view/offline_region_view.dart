@@ -401,13 +401,28 @@ class OfflineRegionView extends StatelessWidget {
                             ],
                           ),
                         ),
-                        IconButton(
-                          onPressed: () => controller.deleteRegion(region.id),
-                          icon: Icon(
-                            Icons.delete_outline,
-                            color: AppColors.error,
-                            size: 20.sp,
-                          ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              onPressed: () =>
+                                  controller.viewRegionOnMap(region),
+                              icon: Icon(
+                                Icons.visibility_outlined,
+                                color: AppColors.primary,
+                                size: 20.sp,
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () =>
+                                  controller.deleteRegion(region.id),
+                              icon: Icon(
+                                Icons.delete_outline,
+                                color: AppColors.error,
+                                size: 20.sp,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),

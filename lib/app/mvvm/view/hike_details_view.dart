@@ -7,6 +7,7 @@ import '../../config/app_strings.dart';
 import '../../config/utils.dart';
 import '../../widgets/glass_container.dart';
 import '../../widgets/map_widget.dart';
+import '../../widgets/elevation_chart_widget.dart';
 import '../view_model/hike_details_view_model.dart';
 
 /// Hike Details View - Full review of completed hike
@@ -246,6 +247,46 @@ class HikeDetailsView extends GetView<HikeDetailsViewModel> {
                           Utils.formatElevationSimple(hike.elevationGain),
                         ),
                       ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // Elevation Profile
+                  Text('Elevation Profile', style: AppTextStyle.headlineMedium),
+                  const SizedBox(height: 16),
+                  GlassContainer(
+                    padding: const EdgeInsets.all(16),
+                    child: SizedBox(
+                      height: 200,
+                      child: Obx(() {
+                        if (controller.isLoadingElevation.value) {
+                          return const Center(
+                            child: CircularProgressIndicator(
+                              color: AppColors.primary,
+                            ),
+                          );
+                        }
+                        final profile = controller.elevationProfile.value;
+                        if (profile == null ||
+                            profile.elevations.isEmpty ||
+                            profile.distances.isEmpty) {
+                          return Center(
+                            child: Text(
+                              controller.elevationError.value
+                                  ? 'Failed to load elevation'
+                                  : 'No elevation data',
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          );
+                        }
+                        return ElevationChartWidget(
+                          elevations: profile.elevations,
+                          distances: profile.distances,
+                        );
+                      }),
                     ),
                   ),
 

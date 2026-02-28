@@ -4,6 +4,9 @@ import 'package:latlong2/latlong.dart';
 import '../../repository/offline_region_repository.dart';
 import '../../services/logger_service.dart';
 import '../model/offline_region.dart';
+import '../../config/app_routes.dart';
+import 'bottom_bar_controller.dart';
+import 'hike_tracking_controller.dart';
 
 /// ViewModel for the Offline Region Management screen.
 ///
@@ -239,6 +242,45 @@ class OfflineRegionViewModel extends GetxController {
         error: e,
         stackTrace: stackTrace,
       );
+    }
+  }
+
+  /// View region on main tracking map
+  void viewRegionOnMap(OfflineRegion region) {
+    LoggerService.i(
+      'OfflineRegionViewModel.viewRegionOnMap: viewing region ${region.name}',
+    );
+
+    // Switch to Record tab
+    if (Get.isRegistered<BottomBarController>()) {
+      Get.find<BottomBarController>().changeTab(
+        1,
+      ); // Assuming index 1 is Record view
+    }
+
+    // Return to root (BottomBarView)
+    Get.until(
+      (route) => Get.currentRoute == AppRoutes.bottomBarView || route.isFirst,
+    );
+
+    // Move map to region center using HikeTrackingController
+    if (Get.isRegistered<HikeTrackingController>()) {
+      final centerLat = (region.minLat + region.maxLat) / 2;
+      final centerLng = (region.minLng + region.maxLng) / 2;
+
+      final trackingController = Get.find<HikeTrackingController>();
+      trackingController.followUser.value = false;
+
+      try {
+        trackingController.mapController.move(
+          LatLng(centerLat, centerLng),
+          12, // default zoom for region overview
+        );
+      } catch (e) {
+        LoggerService.e(
+          'OfflineRegionViewModel.viewRegionOnMap: Map not ready $e',
+        );
+      }
     }
   }
 

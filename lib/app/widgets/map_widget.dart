@@ -26,6 +26,8 @@ class MapWidget extends StatelessWidget {
   final MapController? mapController;
   final bool isInteractive;
   final bool? showMapSkinSwitcher;
+  final void Function(TapPosition, LatLng)? onTap;
+  final List<Widget>? extraLayers;
 
   /// Optional slope segments for gradient-colored polylines
   final List<SlopeSegment>? slopeSegments;
@@ -35,6 +37,9 @@ class MapWidget extends StatelessWidget {
 
   /// Whether to show the slope legend overlay
   final bool showSlopeLegend;
+
+  /// Callback when slope coloring is toggled from the layers menu
+  final ValueChanged<bool>? onSlopeToggle;
 
   const MapWidget({
     super.key,
@@ -50,6 +55,9 @@ class MapWidget extends StatelessWidget {
     this.slopeSegments,
     this.showSlopeColoring = false,
     this.showSlopeLegend = false,
+    this.onSlopeToggle,
+    this.onTap,
+    this.extraLayers,
   });
 
   @override
@@ -112,6 +120,7 @@ class MapWidget extends StatelessWidget {
             initialZoom: zoom,
             minZoom: 1,
             maxZoom: 19,
+            onTap: onTap,
             interactionOptions: InteractionOptions(
               flags: isInteractive ? InteractiveFlag.all : InteractiveFlag.none,
             ),
@@ -125,10 +134,16 @@ class MapWidget extends StatelessWidget {
 
             // Markers
             if (markers.isNotEmpty) MarkerLayer(markers: markers),
+
+            if (extraLayers != null) ...extraLayers!,
           ],
         ),
 
-        if (showMapSkinSwitcher ?? true) const MapSkinSwitcher(),
+        if (showMapSkinSwitcher ?? true)
+          MapSkinSwitcher(
+            showSlopeColoring: showSlopeColoring,
+            onSlopeToggle: onSlopeToggle,
+          ),
 
         // Slope legend overlay
         if (showSlopeLegend && showSlopeColoring && slopeSegments != null)
@@ -198,7 +213,14 @@ class MapWidget extends StatelessWidget {
 }
 
 class MapSkinSwitcher extends StatelessWidget {
-  const MapSkinSwitcher({super.key});
+  final bool showSlopeColoring;
+  final ValueChanged<bool>? onSlopeToggle;
+
+  const MapSkinSwitcher({
+    super.key,
+    this.showSlopeColoring = false,
+    this.onSlopeToggle,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -283,6 +305,32 @@ class MapSkinSwitcher extends StatelessWidget {
                 ),
               ),
             ),
+
+            if (onSlopeToggle != null) ...[
+              const Divider(color: AppColors.dimGrey, height: 32),
+              SwitchListTile(
+                  title: Text(
+                    'Slope Coloring',
+                    style: AppTextStyle.bodyMedium.copyWith(
+                      color: AppColors.white,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Visualize steepness of the trail',
+                    style: AppTextStyle.bodySmall.copyWith(
+                      color: AppColors.platinum,
+                    ),
+                  ),
+                  value: showSlopeColoring,
+                  onChanged: (val) {
+                    onSlopeToggle!(val);
+                    Get.back();
+                  },
+                  activeColor: AppColors.primary,
+                ),
+
+            ],
+
             20.height,
           ],
         ),

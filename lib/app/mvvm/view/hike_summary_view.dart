@@ -175,6 +175,35 @@ class HikeSummaryView extends GetView<HikeReplayController> {
                 ),
 
                 24.height,
+
+                /// 📈 Elevation Profile
+                Text('Elevation Profile', style: AppTextStyle.headlineMedium),
+                16.height,
+                GlassContainer(
+                  padding: const EdgeInsets.all(16),
+                  child: SizedBox(
+                    height: 200,
+                    child: Obx(() {
+                      final elevs = controller.smoothedElevations;
+                      final dists = controller.cumulativeDistances;
+                      if (elevs.isEmpty || dists.isEmpty) {
+                        return const Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.primary,
+                          ),
+                        );
+                      }
+                      return ElevationChartWidget(
+                        elevations: elevs,
+                        distances: dists,
+                        currentIndex: controller.currentIndex.value,
+                        onPointTapped: controller.scrubToIndex,
+                      );
+                    }),
+                  ),
+                ),
+
+                24.height,
               ],
             ),
           ).paddingAll(16),

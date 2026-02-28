@@ -3,9 +3,11 @@ import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:gps/app/mvvm/model/map_skin_modal.dart';
+import 'package:hive/hive.dart';
 import 'app/config/app_routes.dart';
 import 'app/config/app_pages.dart';
 import 'app/config/app_colors.dart';
+import 'app/mvvm/model/offline_region.dart';
 import 'app/services/storage_service.dart';
 import 'app/services/map_tile_service.dart';
 import 'app/services/logger_service.dart';
@@ -46,6 +48,9 @@ void main() async {
     ];
 
     MapTileService.instance.registerSkins(skins);
+    Hive.registerAdapter(OfflineRegionAdapter()); // 👈 REQUIRED
+
+    await Hive.openBox<OfflineRegion>('regionsBox');
 
     LoggerService.i('main: Application initialization complete');
   } catch (e, stackTrace) {

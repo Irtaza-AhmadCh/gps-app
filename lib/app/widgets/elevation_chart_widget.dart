@@ -6,8 +6,8 @@ import '../config/utils.dart';
 /// Reusable elevation chart widget using fl_chart
 /// Displays elevation profile with touch interaction
 class ElevationChartWidget extends StatelessWidget {
-  final List<double> elevations;
-  final List<double> distances; // Cumulative distances in meters
+  final List<double>? elevations;
+  final List<double>? distances; // meters
   final int? currentIndex;
   final Function(int)? onPointTapped;
 
@@ -21,57 +21,82 @@ class ElevationChartWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (elevations.isEmpty || distances.isEmpty) {
-      return Center(
-        child: Text(
-          'No elevation data',
-          style: TextStyle(color: AppColors.textSecondary),
-        ),
-      );
+    // ✅ Safety checks
+    if (elevations == null ||
+        distances == null ||
+        elevations!.isEmpty ||
+        distances!.isEmpty ||
+        elevations!.length != distances!.length) {
+      return _buildEmptyState();
     }
 
-    // Prepare data points
-    final List<FlSpot> spots = [];
-    for (int i = 0; i < elevations.length; i++) {
-      final distanceKm = distances[i] / 1000; // Convert to km
-      spots.add(FlSpot(distanceKm, elevations[i]));
+    final safeElevations = elevations!;
+    final safeDistances = distances!;
+
+    // If only one point → duplicate it slightly so chart can render
+    if (safeElevations.length == 1) {
+      safeElevations.add(safeElevations.first);
+      safeDistances.add(safeDistances.first + 1);
     }
 
-    // Find min/max for Y axis
-    final minElevation = elevations.reduce((a, b) => a < b ? a : b);
-    final maxElevation = elevations.reduce((a, b) => a > b ? a : b);
-    final elevationRange = maxElevation - minElevation;
-    final yMin = (minElevation - elevationRange * 0.1).floorToDouble();
-    final yMax = (maxElevation + elevationRange * 0.1).ceilToDouble();
+    // Prepare spots
+    final List<FlSpot> spots = List.generate(
+      safeElevations.length,
+          (i) => FlSpot(
+        (safeDistances[i] / 1000),
+        safeElevations[i],
+      ),
+    );
+
+    // Safe min/max
+    final minElevation = safeElevations.reduce((a, b) => a < b ? a : b);
+    final maxElevation = safeElevations.reduce((a, b) => a > b ? a : b);
+
+    double elevationRange = maxElevation - minElevation;
+
+    // Prevent zero range crash
+    if (elevationRange == 0) {
+      elevationRange = 10; // fallback range
+    }
+
+    final yMin = (minElevation - elevationRange * 0.1);
+    final yMax = (maxElevation + elevationRange * 0.1);
+
+    final totalDistanceKm = safeDistances.last / 1000;
+    final double xInterval = totalDistanceKm == 0 ? 1 : totalDistanceKm / 4;
+    final double yInterval = elevationRange == 0 ? 1 : elevationRange / 4;
 
     return LineChart(
       LineChartData(
+        minX: 0,
+        maxX: totalDistanceKm == 0 ? 1 : totalDistanceKm,
+        minY: yMin,
+        maxY: yMax,
+
         gridData: FlGridData(
           show: true,
-          drawVerticalLine: true,
-          horizontalInterval: elevationRange / 4,
-          getDrawingHorizontalLine: (value) {
-            return FlLine(
-              color: AppColors.dimGrey.withOpacity(0.3),
-              strokeWidth: 1,
-            );
-          },
-          getDrawingVerticalLine: (value) {
-            return FlLine(
-              color: AppColors.dimGrey.withOpacity(0.3),
-              strokeWidth: 1,
-            );
-          },
+          horizontalInterval: yInterval,
+          getDrawingHorizontalLine: (_) => FlLine(
+            color: AppColors.dimGrey.withOpacity(0.3),
+            strokeWidth: 1,
+          ),
+          getDrawingVerticalLine: (_) => FlLine(
+            color: AppColors.dimGrey.withOpacity(0.3),
+            strokeWidth: 1,
+          ),
         ),
+
         titlesData: FlTitlesData(
-          show: true,
-          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 30,
-              interval: (distances.last / 1000) / 4, // 4 labels
+              showTitles: totalDistanceKm > 0,
+              interval: xInterval,
               getTitlesWidget: (value, meta) {
                 return SideTitleWidget(
                   axisSide: meta.axisSide,
@@ -89,8 +114,7 @@ class ElevationChartWidget extends StatelessWidget {
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 50,
-              interval: elevationRange / 4,
+              interval: yInterval,
               getTitlesWidget: (value, meta) {
                 return SideTitleWidget(
                   axisSide: meta.axisSide,
@@ -106,14 +130,12 @@ class ElevationChartWidget extends StatelessWidget {
             ),
           ),
         ),
+
         borderData: FlBorderData(
           show: true,
           border: Border.all(color: AppColors.dimGrey),
         ),
-        minX: 0,
-        maxX: distances.last / 1000,
-        minY: yMin,
-        maxY: yMax,
+
         lineBarsData: [
           LineChartBarData(
             spots: spots,
@@ -121,63 +143,66 @@ class ElevationChartWidget extends StatelessWidget {
             color: AppColors.primary,
             barWidth: 3,
             isStrokeCapRound: true,
-            dotData: FlDotData(show: false),
+            dotData: const FlDotData(show: false),
             belowBarData: BarAreaData(
               show: true,
               color: AppColors.primary.withOpacity(0.2),
             ),
           ),
         ],
+
+        // ✅ Safe touch handling
         lineTouchData: LineTouchData(
           enabled: onPointTapped != null,
-          touchCallback: (FlTouchEvent event, LineTouchResponse? response) {
+          touchCallback: (event, response) {
             if (event is FlTapUpEvent &&
-                response != null &&
+                response?.lineBarSpots != null &&
+                response!.lineBarSpots!.isNotEmpty &&
                 onPointTapped != null) {
-              final spot = response.lineBarSpots?.first;
-              if (spot != null) {
-                // Find closest index
-                final tappedDistance = spot.x * 1000; // Convert back to meters
-                int closestIndex = 0;
-                double minDiff = double.infinity;
-                for (int i = 0; i < distances.length; i++) {
-                  final diff = (distances[i] - tappedDistance).abs();
-                  if (diff < minDiff) {
-                    minDiff = diff;
-                    closestIndex = i;
-                  }
+              final spot = response.lineBarSpots!.first;
+
+              final tappedDistance = spot.x * 1000;
+
+              int closestIndex = 0;
+              double minDiff = double.infinity;
+
+              for (int i = 0; i < safeDistances.length; i++) {
+                final diff = (safeDistances[i] - tappedDistance).abs();
+                if (diff < minDiff) {
+                  minDiff = diff;
+                  closestIndex = i;
                 }
-                onPointTapped!(closestIndex);
               }
+
+              onPointTapped!(closestIndex);
             }
           },
-          touchTooltipData: LineTouchTooltipData(
-            getTooltipItems: (List<LineBarSpot> touchedSpots) {
-              return touchedSpots.map((spot) {
-                return LineTooltipItem(
-                  '${spot.y.toInt()}m\n${spot.x.toStringAsFixed(2)}km',
-                  const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                );
-              }).toList();
-            },
-          ),
         ),
-        extraLinesData: currentIndex != null
+
+        // ✅ Safe vertical indicator
+        extraLinesData: (currentIndex != null &&
+            currentIndex! >= 0 &&
+            currentIndex! < safeDistances.length)
             ? ExtraLinesData(
-                verticalLines: [
-                  VerticalLine(
-                    x: distances[currentIndex!] / 1000,
-                    color: AppColors.elevationGain,
-                    strokeWidth: 2,
-                    dashArray: [5, 5],
-                  ),
-                ],
-              )
-            : null,
+          verticalLines: [
+            VerticalLine(
+              x: safeDistances[currentIndex!] / 1000,
+              color: AppColors.elevationGain,
+              strokeWidth: 2,
+              dashArray: [5, 5],
+            ),
+          ],
+        )
+            : ExtraLinesData(),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Text(
+        'No elevation data',
+        style: TextStyle(color: AppColors.textSecondary),
       ),
     );
   }

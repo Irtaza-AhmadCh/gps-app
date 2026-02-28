@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:flutter_map/flutter_map.dart';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart' hide WidgetPaddingX;
@@ -53,14 +54,230 @@ class LiveTrackingView extends GetView<HikeTrackingController> {
           /// Map Section
           Expanded(
             flex: 3,
-            child: Obx(
-              () => MapWidget(
-                points: controller.trackPoints,
-                currentPoint: controller.currentLocation.value,
-                showStartMarker: true,
-                showCurrentMarker: true,
-                mapController: controller.mapController,
-              ),
+            child: Stack(
+              children: [
+                Obx(
+                  () => MapWidget(
+                    points: controller.trackPoints,
+                    currentPoint: controller.currentLocation.value,
+                    showStartMarker: true,
+                    showCurrentMarker: true,
+                    mapController: controller.mapController,
+                    onTap: (tapPosition, point) => controller.onMapTap(point),
+                    showSlopeColoring: controller.showSlopeColoring.value,
+                    slopeSegments: controller.slopeSegments,
+                    showSlopeLegend: controller.showSlopeColoring.value,
+                    onSlopeToggle: (value) {
+                      if (controller.showSlopeColoring.value != value) {
+                        controller.toggleSlopeColoring();
+                      }
+                    },
+                    extraLayers: [
+                      if (controller.isDownloadMode.value &&
+                          controller.selectionStart.value != null &&
+                          controller.selectionEnd.value != null)
+                        PolygonLayer(
+                          polygons: [
+                            Polygon(
+                              points: controller.getPolygonPoints(),
+                              color: AppColors.primary.withOpacity(0.15),
+                              borderColor: AppColors.primary,
+                              borderStrokeWidth: 2,
+                              isFilled: true,
+                            ),
+                          ],
+                        ),
+                      if (controller.isDownloadMode.value &&
+                          controller.selectionStart.value != null)
+                        MarkerLayer(
+                          markers: [
+                            Marker(
+                              point: controller.selectionStart.value!,
+                              width: 20,
+                              height: 20,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: AppColors.white,
+                                    width: 2,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            if (controller.selectionEnd.value != null)
+                              Marker(
+                                point: controller.selectionEnd.value!,
+                                width: 20,
+                                height: 20,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: AppColors.white,
+                                      width: 2,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
+
+                // Download Mode Overlay Hints and Controls
+                Obx(() {
+                  if (!controller.isDownloadMode.value)
+                    return const SizedBox.shrink();
+                  String hint;
+                  if (controller.selectionStart.value == null) {
+                    hint = 'Tap to set first corner';
+                  } else if (controller.selectionEnd.value == null) {
+                    hint = 'Tap to set second corner';
+                  } else {
+                    hint = 'Ready to download';
+                  }
+                  return Positioned(
+                    top: 12,
+                    left: 16,
+                    right: 16,
+                    child: GlassContainer(
+                      padding: const EdgeInsets.all(10),
+                      borderRadius: 10,
+                      blur: 10,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            hint,
+                            textAlign: TextAlign.center,
+                            style: AppTextStyle.bodySmall.copyWith(
+                              color: AppColors.white,
+                            ),
+                          ),
+                          if (controller.hasCompleteSelection) ...[
+                            8.height,
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                Text(
+                                  '${controller.estimatedTiles.value} tiles',
+                                  style: AppTextStyle.bodySmall.copyWith(
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                                Text(
+                                  controller.estimatedSize.value,
+                                  style: AppTextStyle.bodySmall.copyWith(
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            12.height,
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: GlassButton(
+                                    onTap: controller.cancelDownloadMode,
+                                    label: 'Cancel',
+                                  ),
+                                ),
+                                12.width,
+                                Expanded(
+                                  child: GlassButton(
+                                    onTap: () =>
+                                        _showDownloadBottomSheet(context),
+                                    label: 'Download',
+                                    accentColor: AppColors.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+
+                // Download Progress Overlay
+                Obx(() {
+                  if (!controller.isDownloading.value)
+                    return const SizedBox.shrink();
+                  return Container(
+                    color: Colors.black54,
+                    child: Center(
+                      child: GlassContainer(
+                        padding: const EdgeInsets.all(24),
+                        borderRadius: 16,
+                        blur: 12,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircularProgressIndicator(
+                              value: controller.downloadProgress.value,
+                              color: AppColors.primary,
+                            ),
+                            16.height,
+                            Text(
+                              '${(controller.downloadProgress.value * 100).toInt()}%',
+                              style: AppTextStyle.bodyMedium.copyWith(
+                                color: AppColors.white,
+                              ),
+                            ),
+                            8.height,
+                            Text(
+                              'Downloading...',
+                              style: AppTextStyle.bodySmall.copyWith(
+                                color: AppColors.platinum,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+
+                // Map Actions (Floating right side)
+                Obx(() {
+                  if (controller.isDownloadMode.value)
+                    return const SizedBox.shrink();
+                  return Positioned(
+                    right: 16,
+                    top: 80, // below MapSkinSwitcher
+                    child: GestureDetector(
+                      onTap: controller.startDownloadMode,
+                      child: GlassContainer(
+                        padding: const EdgeInsets.all(10),
+                        borderRadius: 12,
+                        blur: 10,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.download_for_offline_outlined,
+                              color: AppColors.white,
+                              size: 18,
+                            ),
+                            6.width,
+                            Text(
+                              'Offline',
+                              style: AppTextStyle.bodySmall.copyWith(
+                                color: AppColors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ],
             ),
           ),
 
@@ -188,6 +405,74 @@ class LiveTrackingView extends GetView<HikeTrackingController> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showDownloadBottomSheet(BuildContext context) {
+    final textController = TextEditingController();
+    Get.bottomSheet(
+      GlassContainer(
+        borderRadius: 24,
+        blur: 12,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Save Offline Region',
+                style: AppTextStyle.headlineMedium.copyWith(
+                  color: AppColors.white,
+                ),
+              ),
+              16.height,
+              TextField(
+                controller: textController,
+                style: const TextStyle(color: AppColors.white),
+                decoration: const InputDecoration(
+                  hintText: 'Region Name',
+                  hintStyle: TextStyle(color: AppColors.dimGrey),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.dimGrey),
+                  ),
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.primary),
+                  ),
+                ),
+              ),
+              24.height,
+              Row(
+                children: [
+                  Expanded(
+                    child: GlassButton(
+                      onTap: () => Get.back(),
+                      label: 'Cancel',
+                    ),
+                  ),
+                  12.width,
+                  Expanded(
+                    child: GlassButton(
+                      onTap: () {
+                        final name = textController.text.trim();
+                        if (name.isNotEmpty) {
+                          Get.back();
+                          controller.downloadRegion(name);
+                        }
+                      },
+                      label: 'Save',
+                      accentColor: AppColors.primary,
+                    ),
+                  ),
+                ],
+              ),
+              16.height,
+            ],
+          ),
+        ),
+      ),
+      isScrollControlled: false,
+      backgroundColor: Colors.transparent,
     );
   }
 }
